@@ -2,131 +2,94 @@ const axios = require('axios');
 
 module.exports = function (app) {
     const yt = {
-        baseUrl: 'https://ssvid.net',
-        baseHeaders: {
+        baseUrl: 'https://ssyt.rip',
+
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36',
+            'Accept': 'application/json, text/javascript, */*; q=0.01',
             'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'origin': 'https://ssvid.net',
-            'referer': 'https://ssvid.net/youtube-to-mp3',
+            'x-requested-with': 'XMLHttpRequest',
+            'origin': 'https://ssyt.rip',
+            'referer': 'https://ssyt.rip/ar/',
         },
 
-        validateFormat(userFormat) {
-            const validFormat = ['mp3', '360p', '720p', '1080p'];
-            if (!validFormat.includes(userFormat)) {
-                throw Error(`invalid format!. available formats: ${validFormat.join(', ')}`);
+        validateFormat(format) {
+            const valid = ['mp3']; // تقدر تزود بعدين
+            if (!valid.includes(format)) {
+                throw Error(`invalid format! available: ${valid.join(', ')}`);
             }
         },
 
-        handleFormat(userFormat, searchJson) {
-            this.validateFormat(userFormat);
-            let result;
+        async convert(url, format = 'mp3') {
+            this.validateFormat(format);
 
-            if (userFormat === 'mp3') {
-                result = searchJson.links?.mp3?.mp3128?.k;
-            } else {
-                const allFormats = Object.entries(searchJson.links.mp4 || {});
-                let selectedFormat = userFormat;
+            // ⚠️ لازم تجيب id من request تاني (dynamic)
+            // حالياً هنستخدم request أولي يطلع id
 
-                const quality = allFormats
-                    .map(v => v[1].q)
-                    .filter(v => /\d+p/.test(v))
-                    .map(v => parseInt(v))
-                    .sort((a, b) => b - a)
-                    .map(v => v + 'p');
+            const search = await axios.post(
+                `${this.baseUrl}/mates/en/analyze/ajax`,
+                new URLSearchParams({
+                    url
+                }),
+                { headers: this.headers }
+            );
 
-                if (!quality.includes(userFormat)) selectedFormat = quality[0];
-                const find = allFormats.find(v => v[1].q === selectedFormat);
-                result = find?.[1]?.k;
+            const data = search.data;
+
+            if (!data || !data.id) {
+                throw Error('فشل في جلب ID');
             }
 
-            if (!result) throw Error(`${userFormat} gak ada`);
-            return result;
-        },
+            const id = data.id;
 
-        async hit(path, payload) {
-            try {
-                const { data } = await axios.post(
-                    `${this.baseUrl}${path}`,
-                    new URLSearchParams(payload),
-                    { headers: this.baseHeaders }
-                );
-                return data;
-            } catch (e) {
-                throw Error(`${path}\n${e.message}`);
-            }
-        },
+            // 🔥 التحويل
+            const { data: convert } = await axios.post(
+                `${this.baseUrl}/mates/en/convert?id=${encodeURIComponent(id)}`,
+                new URLSearchParams({
+                    platform: 'youtube',
+                    url: url,
+                    title: data.title || 'unknown',
+                    id: id,
+                    ext: 'mp3',
+                    note: '128k',
+                    format: '140'
+                }),
+                { headers: this.headers }
+            );
 
-        async download(queryOrYtUrl, userFormat = 'mp3') {
-            this.validateFormat(userFormat);
-
-            let search = await this.hit('/api/ajax/search', {
-                query: queryOrYtUrl,
-                cf_token: '',
-                vt: 'youtube',
-            });
-
-            if (search.p === 'search') {
-                if (!search?.items?.length) throw Error(`hasil pencarian ${queryOrYtUrl} tidak ada`);
-                const { v } = search.items[0];
-                const videoUrl = 'https://www.youtube.com/watch?v=' + v;
-                search = await this.hit('/api/ajax/search', {
-                    query: videoUrl,
-                    cf_token: '',
-                    vt: 'youtube',
-                });
+            if (!convert || convert.status !== 'ok') {
+                throw Error('فشل التحويل');
             }
 
-            const vid = search.vid;
-            const k = this.handleFormat(userFormat, search);
-
-            const convert = await this.hit('/api/ajax/convert', { k, vid });
-
-            if (convert.c_status === 'CONVERTING') {
-                let convert2;
-                const limit = 5;
-                let attempt = 0;
-
-                do {
-                    attempt++;
-                    const { data } = await axios.post(
-                        `${this.baseUrl}/api/convert/check?hl=en`,
-                        new URLSearchParams({ vid, b_id: convert.b_id }),
-                        { headers: this.baseHeaders }
-                    );
-                    convert2 = data;
-                    if (convert2.c_status === 'CONVERTED') return convert2;
-                    await new Promise(r => setTimeout(r, 5000));
-                } while (attempt < limit && convert2.c_status === 'CONVERTING');
-
-                throw Error('file belum siap / status belum diketahui');
-            } else {
-                return convert;
-            }
-        },
+            return convert;
+        }
     };
 
-    // endpoint API
+    // endpoint
     app.get('/api/ytdl', async (req, res) => {
-        const { format, url } = req.query;
+        const { url, format = 'mp3' } = req.query;
 
-        if (!format || !url) {
+        if (!url) {
             return res.status(400).json({
                 status: false,
-                error: 'Parameter "format" dan "url" diperlukan',
+                error: 'حط الرابط',
             });
         }
 
         try {
-            const result = await yt.download(url, format);
+            const result = await yt.convert(url, format);
+
             res.json({
                 status: true,
-                creator: 'Danz-dev',
-                result,
+                creator: 'Mohnd',
+                result
             });
+
         } catch (err) {
             console.error(err);
             res.status(500).json({
                 status: false,
-                error: err.message,
+                error: err.message
             });
         }
     });
