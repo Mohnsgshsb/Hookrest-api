@@ -1,11 +1,11 @@
 {
-  "name": "Hookrest Api's",
+  "name": "Terbo Api's",
   "version": "v2",
-  "description": "Simple rest api by Hookrest.",
+  "description": "Simple rest api by Terbo Spam.",
   "header": {
     "status": "Online!",
     "imageSrc": [
-      "https://qu.ax/rGkeW.jpg"
+      "https://files.catbox.moe/t45g82.jpeg"
     ],
     "imageSize": {
       "mobile": "50%",
@@ -28,27 +28,27 @@
   ],
   "categories": [
     {
-      "name": "AI (Artificial Intelligence)",
+      "name": "〘 🕷️ ┊AI┊🩸 〙",
       "items": [
         {
-          "name": "Chatgpt",
-          "desc": "Talk with Chatgpt",
+          "name": "🩸┊『 Chatgpt 』↶",
+          "desc": "اتكلم مع GPT",
           "path": "/ai/chatgpt?question="
         },
         {
-          "name": "Chatbot",
-          "desc": "Talk with Chatbot ai",
+          "name": "🩸┊『 Chatbot 』↶",
+          "desc": "اكتب المحتوي الي عايزو",
           "path": "/api/ai?question="
         },
         {
-          "name": "Kimi",
-          "desc": "Talk with Kimi-ai",
+          "name": "🩸┊『 Kimi 』↶",
+          "desc": "اتكلم مع KIMI",
           "path": "/ai/kimi?q="
         }
       ]
     },
     {
-      "name": "Islami",
+      "name": "〘 🕷️ ┊Islami┊🩸 〙",
       "items": [
         {
           "name": "Jadwal Sholat",
@@ -63,7 +63,7 @@
       ]
     },
     {
-      "name": "Tools",
+      "name": "〘 🕷️ ┊Tools┊🩸 〙",
       "items": [
         {
           "name": "Text2img",
@@ -83,7 +83,7 @@
       ]
     },
     {
-      "name": "Random",
+      "name": "〘 🕷️ ┊Random┊🩸 〙",
       "items": [
         {
           "name": "Loli",
@@ -98,10 +98,10 @@
       ]
     },
     {
-      "name": "Search Tools",
+      "name": "〘 🕷️ ┊Search Tools┊🩸 〙",
       "items": [
         {
-          "name": "YouTube",
+          "name": "〘 🕷️ ┊YouTube┊🩸 〙",
           "desc": "Youtube search",
           "path": "/search/youtube?q="
         },
@@ -123,7 +123,7 @@
       ]
     },
     {
-      "name": "Downloader",
+      "name": "〘 🕷️ ┊Downloader┊🩸 〙",
       "items": [
         {
           "name": "Ytmp3",
@@ -148,7 +148,7 @@
       ]
     },
     {
-      "name": "Info",
+      "name": "〘 🕷️ ┊Info┊🩸 〙",
       "items": [
         {
           "name": "Jadwal tv",
@@ -163,7 +163,7 @@
       ]
     },
     {
-      "name": "Status",
+      "name": "〘 🕷️ ┊Status┊🩸 〙",
       "items": [
         {
           "name": "Info status",
