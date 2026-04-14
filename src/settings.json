@@ -35,11 +35,11 @@
           "desc": "اتكلم مع GPT",
           "path": "/ai/chatgpt?question="
         },
-        {
-          "name": "🩸┊『 Chatbot 』↶",
-          "desc": "اكتب المحتوي الي عايزو",
-          "path": "/api/ai?question="
-        },
+      {
+  "name": "🩸┊『 TTS 』↶",
+  "desc": "تحويل النص إلى صوت",
+  "path": "/api/tts?prompt=&voice=غوكو"
+      },
         {
   "name": "🩸┊『 Simsim 』↶",
   "desc": "اتكلم مع سمسم AI",
