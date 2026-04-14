@@ -105,7 +105,7 @@ module.exports = function (app) {
   // =========================
   // 🚀 API ENDPOINT
   // =========================
-  app.get("/api/ai", async (req, res) => {
+  app.get("/api/simsim", async (req, res) => {
     const { question } = req.query;
 
     if (!question) {
