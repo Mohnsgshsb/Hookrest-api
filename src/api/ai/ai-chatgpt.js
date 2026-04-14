@@ -1,76 +1,164 @@
-const axios = require('axios');
+const axios = require("axios");
 
 module.exports = function (app) {
-    app.get('/ai/chatgpt', async (req, res) => {
-        const { question, model = 'gpt-5', reasoning_effort = 'medium' } = req.query;
 
-        const conf = {
-            models: ['gpt-5', 'gpt-3.5'],
-            reasoning: ['minimal', 'low', 'medium', 'high']
-        };
+    class GeminiAPI {
+        constructor() {
+            this.baseUrl =
+                "https://us-central1-infinite-chain-295909.cloudfunctions.net/gemini-proxy-staging-v1";
 
-        if (!question) {
-            return res.status(400).json({
-                status: false,
-                error: 'Parameter "question" diperlukan.'
-            });
+            this.headers = {
+                accept: "*/*",
+                "accept-language": "id-ID,id;q=0.9",
+                "content-type": "application/json",
+                priority: "u=1, i",
+                "sec-ch-ua":
+                    '"Chromium";v="131", "Not_A Brand";v="24", "Microsoft Edge Simulate";v="131", "Lemur";v="131"',
+                "sec-ch-ua-mobile": "?1",
+                "sec-ch-ua-platform": '"Android"',
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "cross-site",
+                "user-agent":
+                    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+            };
         }
 
-        if (!conf.models.includes(model)) {
-            return res.status(400).json({
-                status: false,
-                error: `Available models: ${conf.models.join(', ')}`
+        async getImage(imageUrl) {
+            const response = await axios.get(imageUrl, {
+                responseType: "arraybuffer",
             });
+
+            return {
+                inline_data: {
+                    mime_type: response.headers["content-type"],
+                    data: Buffer.from(response.data, "binary").toString("base64"),
+                },
+            };
         }
 
-        if (model === 'gpt-5' && !conf.reasoning.includes(reasoning_effort)) {
+        async chat({ model = "gemini-2.0-flash-lite", prompt, imageUrl = null, ...rest }) {
+            if (!prompt) throw new Error("Prompt is required");
+
+            const parts = [];
+
+            if (imageUrl) {
+                const urls = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
+
+                for (const url of urls) {
+                    const img = await this.getImage(url);
+                    parts.push(img);
+                }
+            }
+
+            parts.push({ text: prompt });
+
+            const body = {
+                model,
+                contents: [{ parts }],
+                ...rest,
+            };
+
+            const { data } = await axios.post(this.baseUrl, body, {
+                headers: this.headers,
+            });
+
+            return data;
+        }
+    }
+
+    const gemini = new GeminiAPI();
+
+    // 🔥 POST
+    app.post("/api/gemini", async (req, res) => {
+        const { prompt, imageUrl, model } = req.body;
+
+        if (!prompt) {
             return res.status(400).json({
                 status: false,
-                error: `Available reasoning effort: ${conf.reasoning.join(', ')}`
+                message: "⚠️ النص مطلوب (prompt)",
             });
         }
 
         try {
-            const { data } = await axios.post('https://chatgpt-2022.vercel.app/api/chat', {
-                conversationId: Date.now().toString(),
-                messages: [{
-                    role: 'user',
-                    content: question
-                }],
-                ...(model === 'gpt-5' ? { reasoningEffort: reasoning_effort } : {}),
-                model: model
-            }, {
-                headers: {
-                    'content-type': 'application/json',
-                    'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36'
-                }
+            const result = await gemini.chat({
+                prompt,
+                imageUrl,
+                model: model || "gemini-2.0-flash-lite",
             });
 
-            const reasoning = data
-                .split('\n\n')
-                .filter(line => line)
-                .map(line => JSON.parse(line.substring(6)))
-                .filter(line => line.type === 'reasoning-done')?.[0]?.text || '';
+            const output =
+                result?.candidates?.[0]?.content?.parts?.[0]?.text || null;
 
-            const text = data
-                .split('\n\n')
-                .filter(line => line)
-                .map(line => JSON.parse(line.substring(6)))
-                .filter(line => line.type === 'text-delta')
-                .map(line => line.textDelta)
-                .join('') || '';
+            if (!output) {
+                return res.status(500).json({
+                    status: false,
+                    message: "⚠️ لم يتم الحصول على رد من Gemini",
+                });
+            }
 
             res.json({
                 status: true,
-                result: { reasoning, text }
+                model: model || "gemini-2.0-flash-lite",
+                response: output,
+                raw: result,
             });
 
         } catch (err) {
             res.status(500).json({
                 status: false,
-                error: 'Gagal memproses permintaan ChatGPT2022.',
-                message: err.message
+                message: "❌ خطأ في Gemini API",
+                error: err.message,
             });
         }
     });
+
+    // 🔥 GET
+    app.get("/api/gemini", async (req, res) => {
+        let { prompt, imageUrl, model } = req.query;
+
+        if (!prompt) {
+            return res.status(400).json({
+                status: false,
+                message: "⚠️ النص مطلوب (prompt)",
+            });
+        }
+
+        if (imageUrl && typeof imageUrl === "string") {
+            imageUrl = imageUrl.split(",");
+        }
+
+        try {
+            const result = await gemini.chat({
+                prompt,
+                imageUrl,
+                model: model || "gemini-2.0-flash-lite",
+            });
+
+            const output =
+                result?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+
+            if (!output) {
+                return res.status(500).json({
+                    status: false,
+                    message: "⚠️ لم يتم الحصول على رد من Gemini",
+                });
+            }
+
+            res.json({
+                status: true,
+                model: model || "gemini-2.0-flash-lite",
+                response: output,
+                raw: result,
+            });
+
+        } catch (err) {
+            res.status(500).json({
+                status: false,
+                message: "❌ خطأ في Gemini API",
+                error: err.message,
+            });
+        }
+    });
+
 };
