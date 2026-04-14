@@ -41,6 +41,11 @@
           "path": "/api/ai?question="
         },
         {
+  "name": "🩸┊『 Simsim 』↶",
+  "desc": "اتكلم مع سمسم AI",
+  "path": "/api/ai?question="
+        },
+        {
           "name": "🩸┊『 Kimi 』↶",
           "desc": "اتكلم مع KIMI",
           "path": "/ai/kimi?q="
