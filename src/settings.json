@@ -133,7 +133,7 @@
         {
           "name": "Ytmp3",
           "desc": "Download youtube format mp3",
-          "path": "/api/ytmp3?url="
+          "path": "/api/ytmp?url="
         },
         {
           "name": "Ytdl mp3/mp4",
