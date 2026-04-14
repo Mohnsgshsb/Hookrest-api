@@ -141,6 +141,11 @@
           "path": "/api/ytmp4?url="
         },
         {
+  "name": "Instagram Downloader",
+  "desc": "Download Instagram posts, reels, photos",
+  "path": "/api/instagram?url="
+        },
+        {
           "name": "Play",
           "desc": "Play youtube format mp3",
           "path": "/dl/yt/play?query="
