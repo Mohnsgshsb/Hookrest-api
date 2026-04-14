@@ -123,42 +123,40 @@
       ]
     },
     {
-  "name": "〘 🕷️ ┊Downloader┊🩸 〙",
-  "items": [
-    {
-      "name": "Ytmp3",
-      "desc": "Download youtube format mp3",
-      "path": "/api/ytmp3?url="
+      "name": "〘 🕷️ ┊Downloader┊🩸 〙",
+      "items": [
+        {
+          "name": "Ytmp3",
+          "desc": "Download youtube format mp3",
+          "path": "/api/ytmp3?url="
+        },
+        {
+          "name": "Ytdl mp3/mp4",
+          "desc": "Download youtube format mp3/320p,720p,1080p",
+          "path": "/api/ytdl?url=&format="
+        },
+        {
+          "name": "Ytmp4",
+          "desc": "Download youtube format mp4",
+          "path": "/api/ytmp4?url="
+        },
+        {
+          "name": "Play",
+          "desc": "Play youtube format mp3",
+          "path": "/dl/yt/play?query="
+        },
+        {
+          "name": "TikTok MP4",
+          "desc": "Download TikTok video without watermark",
+          "path": "/api/tiktok?url="
+        },
+        {
+          "name": "TikTok MP3",
+          "desc": "Download TikTok audio mp3",
+          "path": "/api/tiktok-mp3?url="
+        }
+      ]
     },
-    {
-      "name": "Ytdl mp3/mp4",
-      "desc": "Download youtube format mp3/320p,720p,1080p",
-      "path": "/api/ytdl?url=&format="
-    },
-    {
-      "name": "Ytmp4",
-      "desc": "Download youtube format mp4",
-      "path": "/api/ytmp4?url="
-    },
-    {
-      "name": "Play",
-      "desc": "Play youtube format mp3",
-      "path": "/dl/yt/play?query="
-    },
-
-    // 👇 ضيف دول
-    {
-      "name": "TikTok MP4",
-      "desc": "Download TikTok video without watermark",
-      "path": "/api/tiktok?url="
-    },
-    {
-      "name": "TikTok MP3",
-      "desc": "Download TikTok audio mp3",
-      "path": "/api/tiktok-mp3?url="
-    }
-  ]
-}
     {
       "name": "〘 🕷️ ┊Info┊🩸 〙",
       "items": [
@@ -188,4 +186,4 @@
   "maintenance": {
     "enabled": false
   }
-}
+}}
