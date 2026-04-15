@@ -1,56 +1,81 @@
 const axios = require("axios");
+const FormData = require("form-data");
 
 module.exports = function (app) {
 
-  const API_KEY = "060a6bcfa19809c2cd4d97a212b19273";
+    const searchQueries = [
+        'حديث',
+        'الرسول صلى الله عليه وسلم',
+        'حديث شريف',
+        'حديث نبوي'
+    ];
 
-  app.get("/tools/weather", async (req, res) => {
+    // 🔎 البحث عن فيديوهات TikTok
+    async function ttSearch(query, count = 5) {
+        try {
+            const form = new FormData();
+            form.append("keywords", query);
+            form.append("count", count);
+            form.append("cursor", 0);
+            form.append("web", 1);
+            form.append("hd", 1);
 
-    const { q } = req.query;
+            const { data } = await axios.post(
+                "https://tikwm.com/api/feed/search",
+                form,
+                { headers: form.getHeaders() }
+            );
 
-    if (!q) {
-      return res.status(400).json({
-        status: false,
-        error: "اكتب اسم البلد"
-      });
-    }
+            if (!data?.data?.videos) return [];
 
-    try {
+            const base = "https://tikwm.com";
 
-      const { data } = await axios.get(
-        `https://api.openweathermap.org/data/2.5/weather`,
-        {
-          params: {
-            q,
-            units: "metric",
-            appid: API_KEY
-          }
+            return data.data.videos.map(v => ({
+                query,
+                title: v.title || "بدون عنوان",
+                play: base + v.play,
+                cover: base + v.cover
+            }));
+
+        } catch (e) {
+            console.error("TikTok Search Error:", e.message);
+            return [];
         }
-      );
-
-      const result = {
-        name: data.name,
-        country: data.sys.country,
-        weather: data.weather[0].description,
-        temperature: `${data.main.temp}°C`,
-        min_temp: `${data.main.temp_min}°C`,
-        max_temp: `${data.main.temp_max}°C`,
-        humidity: `${data.main.humidity}%`,
-        wind: `${data.wind.speed} km/h`
-      };
-
-      res.json({
-        status: true,
-        creator: "Mohnd",
-        result
-      });
-
-    } catch (err) {
-      res.status(500).json({
-        status: false,
-        error: "City not found or API error"
-      });
     }
-  });
+
+    // 🔥 API endpoint (تشغيل تلقائي بدون إدخال)
+    app.all("/api/ahades", async (req, res) => {
+
+        try {
+            let allResults = [];
+
+            for (const q of searchQueries) {
+                const results = await ttSearch(q, 3);
+                allResults = allResults.concat(results);
+            }
+
+            if (!allResults.length) {
+                return res.status(404).json({
+                    status: false,
+                    message: "❌ مفيش نتائج"
+                });
+            }
+
+            res.json({
+                status: true,
+                total: allResults.length,
+                queries: searchQueries,
+                videos: allResults,
+                message: "✅ تم جلب النتائج تلقائياً"
+            });
+
+        } catch (err) {
+            res.status(500).json({
+                status: false,
+                message: "⚠️ خطأ في السيرفر",
+                error: err.message
+            });
+        }
+    });
 
 };
