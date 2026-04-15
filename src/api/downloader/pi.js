@@ -1,88 +1,81 @@
-import axios from "axios";
+const axios = require("axios");
 
-const base = "https://www.pinterest.com";
-const search = "/resource/BaseSearchResource/get/";
+module.exports = function (app) {
 
-const headers = {
-    'accept': 'application/json, text/javascript, */*, q=0.01',
-    'referer': 'https://www.pinterest.com/',
-    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-    'x-app-version': 'a9522f',
-    'x-pinterest-appstate': 'active',
-    'x-pinterest-pws-handler': 'www/[username]/[slug].js',
-    'x-requested-with': 'XMLHttpRequest'
-};
+    const base = "https://www.pinterest.com";
+    const search = "/resource/BaseSearchResource/get/";
 
-// 🔥 جلب الكوكيز
-async function getCookies() {
-    try {
-        const res = await axios.get(base);
-        const set = res.headers["set-cookie"];
-        if (!set) return null;
-
-        return set.map(c => c.split(";")[0]).join("; ");
-    } catch {
-        return null;
-    }
-}
-
-// 🔥 البحث
-async function searchPinterest(query) {
-
-    if (!query) {
-        throw new Error("حط كلمة بحث");
-    }
-
-    const cookies = await getCookies();
-    if (!cookies) {
-        throw new Error("فشل جلب الكوكيز");
-    }
-
-    const params = {
-        source_url: `/search/pins/?q=${query}`,
-        data: JSON.stringify({
-            options: {
-                isPrefetch: false,
-                query,
-                scope: "pins",
-                bookmarks: [""],
-                page_size: 10
-            },
-            context: {}
-        }),
-        _: Date.now()
+    const headers = {
+        'accept': 'application/json, text/javascript, */*, q=0.01',
+        'referer': 'https://www.pinterest.com/',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        'x-app-version': 'a9522f',
+        'x-pinterest-appstate': 'active',
+        'x-requested-with': 'XMLHttpRequest'
     };
 
-    const { data } = await axios.get(`${base}${search}`, {
-        headers: { ...headers, cookie: cookies },
-        params
-    });
+    // 🔥 كوكيز
+    async function getCookies() {
+        try {
+            const res = await axios.get(base);
+            const set = res.headers["set-cookie"];
+            if (!set) return null;
 
-    const results = data?.resource_response?.data?.results || [];
-
-    if (!results.length) {
-        throw new Error("مفيش نتائج");
+            return set.map(c => c.split(";")[0]).join("; ");
+        } catch (e) {
+            return null;
+        }
     }
 
-    return results
-        .filter(v => v.images?.orig)
-        .map(pin => ({
-            id: pin.id,
-            title: pin.title || "بدون عنوان",
-            description: pin.description || "بدون وصف",
-            image: pin.images.orig.url,
-            pin_url: `https://pinterest.com/pin/${pin.id}`,
-            uploader: {
-                username: pin.pinner?.username || "",
-                full_name: pin.pinner?.full_name || "",
-                profile_url: `https://pinterest.com/${pin.pinner?.username || ""}`
-            }
-        }));
-}
+    // 🔥 البحث
+    async function searchPinterest(query) {
 
-// 🚀 API
-export default function (app) {
+        if (!query) throw new Error("حط كلمة بحث");
 
+        const cookies = await getCookies();
+        if (!cookies) throw new Error("فشل جلب الكوكيز");
+
+        const params = {
+            source_url: `/search/pins/?q=${query}`,
+            data: JSON.stringify({
+                options: {
+                    isPrefetch: false,
+                    query,
+                    scope: "pins",
+                    bookmarks: [""],
+                    page_size: 10
+                },
+                context: {}
+            }),
+            _: Date.now()
+        };
+
+        const { data } = await axios.get(`${base}${search}`, {
+            headers: { ...headers, cookie: cookies },
+            params
+        });
+
+        const results = data?.resource_response?.data?.results || [];
+
+        if (!results.length) throw new Error("مفيش نتائج");
+
+        return results
+            .filter(v => v.images?.orig)
+            .map(pin => ({
+                id: pin.id,
+                title: pin.title || "بدون عنوان",
+                description: pin.description || "بدون وصف",
+                image: pin.images.orig.url,
+                pin_url: `https://pinterest.com/pin/${pin.id}`,
+                uploader: {
+                    username: pin.pinner?.username || "",
+                    full_name: pin.pinner?.full_name || "",
+                    profile_url: `https://pinterest.com/${pin.pinner?.username || ""}`
+                }
+            }));
+    }
+
+    // 🚀 API ENDPOINT
     app.get("/api/pi", async (req, res) => {
 
         const { q } = req.query;
@@ -112,4 +105,4 @@ export default function (app) {
         }
     });
 
-}
+};
