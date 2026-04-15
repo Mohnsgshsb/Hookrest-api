@@ -35,6 +35,11 @@
   "desc": "تحويل النص إلى صوت",
   "path": "/api/tts?prompt=&voice=غوكو"
       },
+            {
+  "name": "🩸┊『 Masry 』↶",
+  "desc": "مصري ذكاء اصطناعي يعمل بلهجه مصريه",
+  "path": "/api/masry?question="
+      },
         {
   "name": "🩸┊『 Simsim 』↶",
   "desc": "اتكلم مع سمسم AI",
@@ -46,14 +51,9 @@
       "name": "〘 🕷️ ┊Islami┊🩸 〙",
       "items": [
         {
-          "name": "Jadwal Sholat",
-          "desc": "Jadwal sholat seluruh dunia",
-          "path": "/islami/jadwalsholat?city="
-        },
-        {
-          "name": "Random Hadist",
-          "desc": "Hadist",
-          "path": "/islami/hadits/random"
+          "name": "『 Ahades 』",
+          "desc": "يبحث عن أحاديث دينيه",
+          "path": "/api/ahades"
         }
       ]
     },
@@ -61,37 +61,76 @@
       "name": "〘 🕷️ ┊Tools┊🩸 〙",
       "items": [
         {
-          "name": "Edit-Img",
+          "name": "『 Edit-Img 』",
           "desc": "حط لينك الصوره و البرومت",
           "path": "/api/nano?imageUrl=&prompt="
         },
+                {
+          "name": "『 Weather 』",
+          "desc": "اكتب اسم المدينه عشان تعرف الطقس فيها",
+          "path": "/tools/weather?q="
+        },
 {
-  "name": "Noise Remove",
+  "name": "『 Noise Remove 』",
   "desc": "تنقية الصوت من الضوضاء عبر رابط مباشر",
   "path": "/api/noise?media="
 },
         {
-          "name": "Ssweb",
-          "desc": "Screenshot website",
-          "path": "/tools/screenshot?url="
+          "name": "『 Screen Web 』",
+          "desc": "اسكرين شوت لاي ويب سايت",
+          "path": "/tools/screen?url="
         }
       ]
     },
     {
-      "name": "〘 🕷️ ┊Random┊🩸 〙",
-      "items": [
-        {
-          "name": "Loli",
-          "desc": "Loli Random Images",
-          "path": "/random/loli"
-        },
-        {
-          "name": "Blue Archive",
-          "desc": "Blue Archive Random Images",
-          "path": "/random/ba"
-        }
-      ]
-    },
+  "name": "〘 🕷️ ┊Anime Mods┊🩸 〙",
+  "items": [
+    { "name": "Akira", "mode": "akira", "desc": "صور Akira عشوائية", "path": "/api/anime/akira" },
+    { "name": "Akiyama", "mode": "akiyama", "desc": "صور Akiyama عشوائية", "path": "/api/anime/akiyama" },
+    { "name": "Anna", "mode": "anna", "desc": "صور Anna عشوائية", "path": "/api/anime/anna" },
+    { "name": "Asuna", "mode": "asuna", "desc": "صور Asuna عشوائية", "path": "/api/anime/asuna" },
+    { "name": "Ayuzawa", "mode": "ayuzawa", "desc": "صور Ayuzawa عشوائية", "path": "/api/anime/ayuzawa" },
+
+    { "name": "Brouto", "mode": "brouto", "desc": "صور Brouto عشوائية", "path": "/api/anime/brouto" },
+    { "name": "Chiho", "mode": "chiho", "desc": "صور Chiho عشوائية", "path": "/api/anime/chiho" },
+    { "name": "Chitoge", "mode": "chitoge", "desc": "صور Chitoge عشوائية", "path": "/api/anime/chitoge" },
+    { "name": "Deidara", "mode": "deidara", "desc": "صور Deidara عشوائية", "path": "/api/anime/deidara" },
+    { "name": "Erza", "mode": "erza", "desc": "صور Erza عشوائية", "path": "/api/anime/erza" },
+
+    { "name": "Elaina", "mode": "elaina", "desc": "صور Elaina عشوائية", "path": "/api/anime/elaina" },
+    { "name": "Eba", "mode": "eba", "desc": "صور Eba عشوائية", "path": "/api/anime/eba" },
+    { "name": "Emilia", "mode": "emilia", "desc": "صور Emilia عشوائية", "path": "/api/anime/emilia" },
+    { "name": "Hestia", "mode": "hestia", "desc": "صور Hestia عشوائية", "path": "/api/anime/hestia" },
+    { "name": "Hinata", "mode": "hinata", "desc": "صور Hinata عشوائية", "path": "/api/anime/hinata" },
+
+    { "name": "Inori", 
+    "mode": "inori", 
+    "desc": "صور Inori عشوائية", 
+    "path": "/api/anime/inori" },
+    { "name": "Isuzu", "mode": "isuzu", "desc": "صور Isuzu عشوائية", "path": "/api/anime/isuzu" },
+    { "name": "Itachi", "mode": "itachi", "desc": "صور Itachi عشوائية", "path": "/api/anime/itachi" },
+    { "name": "Itori", "mode": "itori", "desc": "صور Itori عشوائية", "path": "/api/anime/itori" },
+    { "name": "Kaga", "mode": "kaga", "desc": "صور Kaga عشوائية", "path": "/api/anime/kaga" },
+
+    { "name": "Kagura", "mode": "kagura", "desc": "صور Kagura عشوائية", "path": "/api/anime/kagura" },
+    { "name": "Kaori", "mode": "kaori", "desc": "صور Kaori عشوائية", "path": "/api/anime/kaori" },
+    { "name": "Keneki", "mode": "keneki", "desc": "صور Keneki عشوائية", "path": "/api/anime/keneki" },
+    { "name": "Kotori", "mode": "kotori", "desc": "صور Kotori عشوائية", "path": "/api/anime/kotori" },
+    { "name": "Gojo", "mode": "جوزو", "desc": "صور Gojo عشوائية", "path": "/api/anime/جوزو" },
+
+    { "name": "Madara", "mode": "madara", "desc": "صور Madara عشوائية", "path": "/api/anime/madara" },
+    { "name": "Mikasa", "mode": "mikasa", "desc": "صور Mikasa عشوائية", "path": "/api/anime/mikasa" },
+    { "name": "Miku", "mode": "miku", "desc": "صور Miku عشوائية", "path": "/api/anime/miku" },
+    { "name": "Minato", "mode": "minato", "desc": "صور Minato عشوائية", "path": "/api/anime/minato" },
+    { "name": "Naruto", "mode": "naruto", "desc": "صور Naruto عشوائية", "path": "/api/anime/naruto" },
+
+    { "name": "Nezuko", "mode": "nezuko", "desc": "صور Nezuko عشوائية", "path": "/api/anime/nezuko" },
+    { "name": "Sagiri", "mode": "sagiri", "desc": "صور Sagiri عشوائية", "path": "/api/anime/sagiri" },
+    { "name": "Sasuke", "mode": "sasuke", "desc": "صور Sasuke عشوائية", "path": "/api/anime/sasuke" },
+    { "name": "Sakura", "mode": "sakura", "desc": "صور Sakura عشوائية", "path": "/api/anime/sakura" },
+    { "name": "Cosplay", "mode": "cosplay", "desc": "صور Cosplay عشوائية", "path": "/api/anime/cosplay" }
+  ]
+},
     {
       "name": "〘 🕷️ ┊Search Tools┊🩸 〙",
       "items": [
