@@ -69,44 +69,57 @@ module.exports = function (app) {
   }
 
   // =========================
-  // API ENDPOINT
+  // REST API ENDPOINT
   // =========================
-  app.post("/api/nano", async (req, res) => {
+
+  // GET: /api/nano?image=URL&prompt=TEXT
+  app.get("/api/nano", async (req, res) => {
     try {
-      const { image, prompt } = req.body;
+      const { image, prompt } = req.query;
 
       if (!image) {
         return res.status(400).json({
           status: false,
-          error: "حط صورة base64 أو url"
+          error: "image required"
         });
       }
 
       if (!prompt) {
         return res.status(400).json({
           status: false,
-          error: "حط البرومت"
+          error: "prompt required"
         });
       }
 
-      // تحويل base64 → buffer (لو جاي من بوت)
       let buffer;
 
+      // base64 support
       if (image.startsWith("data:")) {
         buffer = Buffer.from(image.split(",")[1], "base64");
-      } else {
+      } 
+      // url support
+      else {
         const img = await fetch(image);
+        if (!img.ok) throw new Error("Invalid image URL");
         buffer = Buffer.from(await img.arrayBuffer());
       }
 
-      // 1. upload url
+      // 1. get upload url
       const up = await ImgEditor.getUploadUrl(buffer);
+
+      if (!up.uploadUrl) {
+        throw new Error("Upload URL failed");
+      }
 
       // 2. upload image
       await ImgEditor.upload(up.uploadUrl, buffer);
 
-      // 3. generate
+      // 3. generate image
       const task = await ImgEditor.generate(prompt, up.publicUrl);
+
+      if (!task?.taskId) {
+        throw new Error("Task creation failed");
+      }
 
       // 4. wait result
       const resultUrl = await ImgEditor.check(task.taskId);
