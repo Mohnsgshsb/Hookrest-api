@@ -43,8 +43,8 @@ module.exports = function (app) {
         }
     }
 
-    // 🔥 API endpoint (تشغيل تلقائي بدون إدخال)
-    app.all("/api/ahades", async (req, res) => {
+    // 🔥 GET API endpoint
+    app.get("/api/ahades", async (req, res) => {
 
         try {
             let allResults = [];
