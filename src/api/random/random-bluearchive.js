@@ -1,112 +1,88 @@
 const express = require("express");
 const axios = require("axios");
-const crypto = require("crypto");
-const FormData = require("form-data");
+const cheerio = require("cheerio");
+const qs = require("qs");
 
 module.exports = function (app) {
 
-    class Helper {
-        static BASE_URL = "https://be.aimirror.fun";
-        static UID = Helper.randomHash();
-        static HEADERS = {
-            "User-Agent": "AIMirror/6.8.4+179 (android)",
-            "store": "googleplay",
-            "uid": Helper.UID,
-            "env": "PRO",
-            "accept-language": "en",
-            "accept-encoding": "gzip",
-            "package-name": "com.ai.polyverse.mirror",
-            "host": "be.aimirror.fun",
-            "content-type": "application/json",
-            "app-version": "6.8.4+179"
-        };
+    app.get("/api/igdl", async (req, res) => {
+        try {
+            const url = req.query.url;
 
-        static hash = "";
-        static imageKey = "";
-
-        static randomHash() {
-            const chars = "0123456789abcdef";
-            return Array.from({ length: 16 }, () =>
-                chars[Math.floor(Math.random() * chars.length)]
-            ).join("");
-        }
-
-        static sha1(str) {
-            return crypto.createHash("sha1").update(str, "utf8").digest("hex");
-        }
-
-        static async urlToBuffer(url) {
-            const res = await axios.get(url, { responseType: "arraybuffer" });
-            return Buffer.from(res.data);
-        }
-
-        static async fetchAppToken() {
-            const url = `${this.BASE_URL}/app_token/v2`;
-            const params = {
-                cropped_image_hash: this.hash + ".jpg",
-                uid: this.UID
-            };
-            const res = await axios.get(url, { params, headers: this.HEADERS });
-            return res.data;
-        }
-
-        static async uploadPhoto(payload) {
-            const body = new FormData();
-
-            body.append("name", payload.name);
-            body.append("key", payload.key);
-            body.append("policy", payload.policy);
-            body.append("OSSAccessKeyId", payload.OSSAccessKeyId);
-            body.append("success_action_status", payload.success_action_status);
-            body.append("signature", payload.signature);
-            body.append("backend_type", payload.backend_type);
-            body.append("region", payload.region);
-
-            body.append("file", payload.file, {
-                filename: this.hash + ".jpg",
-                contentType: "image/jpeg"
-            });
-
-            await axios.post(payload.upload_host, body, {
-                headers: { ...body.getHeaders() }
-            });
-        }
-
-        static async requestDraw() {
-            const url = `${this.BASE_URL}/draw?uid=${this.UID}`;
-
-            const data = {
-                model_id: 271,
-                cropped_image_key: this.imageKey,
-                cropped_height: 1024,
-                cropped_width: 768,
-                package_name: "com.ai.polyverse.mirror",
-                ext_args: {
-                    imagine_value2: 50,
-                    custom_prompt: ""
-                },
-                version: "6.8.4",
-                force_default_pose: false,
-                is_free_trial: true
-            };
-
-            const res = await axios.post(url, data, { headers: this.HEADERS });
-            return res.data;
-        }
-
-        static async wait(drawId) {
-            const url = `${this.BASE_URL}/draw/process`;
-
-            while (true) {
-                const res = await axios.get(url, {
-                    headers: this.HEADERS,
-                    params: { draw_request_id: drawId, uid: this.UID }
+            if (!url) {
+                return res.status(400).json({
+                    status: false,
+                    message: "📌 حط رابط الانستجرام ?url="
                 });
+            }
 
-                const data = res.data;
+            // 🔥 تجهيز البيانات زي الموقع
+            const data = qs.stringify({
+                id: url,
+                locale: "en",
+                "cf-turnstile-response": "",
+                tt: "fef583beae21c564cbe86a0a16bd68c7",
+                ts: Date.now()
+            });
 
-                if (data.draw_status === "SUCCEED") {
-                    return data.generated_image_addresses;
+            const response = await axios.post(
+                "https://reelsvideo.io/",
+                data,
+                {
+                    headers: {
+                        "User-Agent": "Mozilla/5.0",
+                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "origin": "https://reelsvideo.io",
+                        "referer": "https://reelsvideo.io/",
+                        "hx-request": "true"
+                    }
+                }
+            );
+
+            const html = response.data;
+
+            // 🔎 تحليل HTML
+            const $ = cheerio.load(html);
+
+            let results = [];
+
+            $("a").each((i, el) => {
+                const link = $(el).attr("href");
+
+                if (link && link.includes(".mp4")) {
+                    results.push({
+                        type: "video",
+                        url: link
+                    });
+                }
+            });
+
+            if (!results.length) {
+                return res.status(404).json({
+                    status: false,
+                    message: "❌ مفيش نتائج (ممكن الموقع غير الحماية)"
+                });
+            }
+
+            res.json({
+                status: true,
+                input: url,
+                total: results.length,
+                data: results,
+                message: "✅ تم استخراج الفيديو"
+            });
+
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({
+                status: false,
+                message: "⚠️ خطأ في السيرفر",
+                error: err.message
+            });
+        }
+    });
+
+};                    return data.generated_image_addresses;
                 }
 
                 if (data.draw_status === "FAILED") {
