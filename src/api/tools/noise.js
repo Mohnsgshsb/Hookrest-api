@@ -1,138 +1,116 @@
 const axios = require("axios");
+const crypto = require("crypto");
 const FormData = require("form-data");
 
 module.exports = function (app) {
 
-  const nano = {
+  const noise = {
     api: {
-      base: "https://imgeditor.co/api",
-      upload: "/get-upload-url",
-      generate: "/generate-image",
-      status: "/generate-image/status"
+      base: "https://noiseremoval.net/wp-content/plugins/audioenhancer/requests/noiseremoval/noiseremovallimited.php"
     },
 
-    headers: {
-      "user-agent": "NB Android/1.0.0",
-      accept: "*/*"
+    cypher: (t, r = "cryptoJS") => {
+      t = t.toString();
+
+      const e = crypto.randomBytes(32);
+      const a = crypto.randomBytes(16);
+      const k = crypto.pbkdf2Sync(r, e, 999, 32, "sha512");
+
+      const cipher = crypto.createCipheriv("aes-256-cbc", k, a);
+
+      let enc = cipher.update(t, "utf8", "base64");
+      enc += cipher.final("base64");
+
+      return {
+        amtext: enc,
+        slam_ltol: e.toString("hex"),
+        iavmol: a.toString("hex")
+      };
     },
 
-    // 🔥 upload image buffer
-    getUploadUrl: async (buffer) => {
-      const { data } = await axios.post(
-        nano.api.base + nano.api.upload,
-        {
-          fileName: "photo.jpg",
-          contentType: "image/jpeg",
-          fileSize: buffer.length
-        },
-        { headers: { "content-type": "application/json", ...nano.headers } }
-      );
+    run: async (buffer) => {
 
-      return data;
-    },
+      const ts = Math.floor(Date.now() / 1000);
+      const enc = noise.cypher(ts);
 
-    upload: async (url, buffer) => {
-      await axios.put(url, buffer, {
+      const form = new FormData();
+
+      form.append("media", buffer, {
+        filename: crypto.randomBytes(3).toString("hex") + ".mp3"
+      });
+
+      form.append("fingerprint", crypto.randomBytes(16).toString("hex"));
+      form.append("mode", "pulse");
+
+      form.append("amtext", enc.amtext);
+      form.append("slam_ltol", enc.slam_ltol);
+      form.append("iavmol", enc.iavmol);
+
+      const { data } = await axios.post(noise.api.base, form, {
         headers: {
-          "content-type": "image/jpeg"
+          ...form.getHeaders(),
+          accept: "*/*",
+          "x-requested-with": "XMLHttpRequest",
+          referer: "https://noiseremoval.net/",
+          "user-agent": "Mozilla/5.0"
         }
       });
-    },
-
-    generate: async (imageUrl, prompt) => {
-      const { data } = await axios.post(
-        nano.api.base + nano.api.generate,
-        {
-          prompt,
-          styleId: "realistic",
-          mode: "image",
-          imageUrl,
-          imageUrls: [imageUrl],
-          numImages: 1,
-          outputFormat: "png",
-          model: "nano-banana"
-        },
-        { headers: nano.headers }
-      );
 
       return data;
-    },
-
-    check: async (taskId) => {
-      let attempts = 0;
-
-      while (attempts < 40) {
-        await new Promise(r => setTimeout(r, 2500));
-
-        const { data } = await axios.get(
-          `${nano.api.base}${nano.api.status}?taskId=${taskId}`
-        );
-
-        if (data.status === "completed") return data.imageUrl;
-        if (data.status === "failed") throw new Error("Generation failed");
-
-        attempts++;
-      }
-
-      throw new Error("Timeout");
     }
   };
 
   // =========================
   // REST API ENDPOINT
   // =========================
-  app.post("/api/nano", async (req, res) => {
+  app.post("/api/noise", async (req, res) => {
     try {
 
-      const { image, prompt } = req.body;
+      const { media } = req.body;
 
-      if (!image) {
+      if (!media) {
         return res.status(400).json({
           status: false,
-          error: "image required (url or base64)"
-        });
-      }
-
-      if (!prompt) {
-        return res.status(400).json({
-          status: false,
-          error: "prompt required"
+          error: "media required (url or base64)"
         });
       }
 
       let buffer;
 
       // base64
-      if (image.startsWith("data:")) {
-        buffer = Buffer.from(image.split(",")[1], "base64");
+      if (media.startsWith("data:")) {
+        buffer = Buffer.from(media.split(",")[1], "base64");
       }
 
       // url
-      else {
-        const img = await axios.get(image, {
+      else if (media.startsWith("http")) {
+        const file = await axios.get(media, {
           responseType: "arraybuffer"
         });
-        buffer = Buffer.from(img.data);
+        buffer = Buffer.from(file.data);
       }
 
-      // 1 upload url
-      const upload = await nano.getUploadUrl(buffer);
+      else {
+        return res.status(400).json({
+          status: false,
+          error: "invalid media format"
+        });
+      }
 
-      // 2 upload image
-      await nano.upload(upload.uploadUrl, buffer);
+      const result = await noise.run(buffer);
 
-      // 3 generate
-      const task = await nano.generate(upload.publicUrl, prompt);
-
-      // 4 wait result
-      const result = await nano.check(task.taskId);
+      if (result?.error) {
+        return res.status(500).json({
+          status: false,
+          error: result.message || "processing failed"
+        });
+      }
 
       return res.json({
         status: true,
         creator: "Mohnd",
         result: {
-          image: result,
-          prompt
+          enhanced: result?.media?.enhanced?.uri || null
         }
       });
 
