@@ -1,106 +1,88 @@
 const axios = require("axios");
-const FormData = require("form-data");
 
 module.exports = function (app) {
 
+  const fastdl = {
+
+    // طلب أولي عشان نجيب التوكنات والمتغيرات
+    getInit: async (url) => {
+      const res = await axios.post(
+        "https://api-wh.fastdl.app/api/convert",
+        new URLSearchParams({
+          sf_url: url
+        }),
+        {
+          headers: {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json, text/plain, */*",
+            "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "origin": "https://fastdl.app",
+            "referer": "https://fastdl.app/"
+          }
+        }
+      );
+
+      return res.data;
+    },
+
+    // محاولة استخراج روابط التحميل
+    parse: (data) => {
+      if (!data || !data.url) return null;
+
+      return data.url.map(v => ({
+        url: v.url,
+        type: v.type,
+        ext: v.ext,
+        name: v.name
+      }));
+    }
+
+  };
+
+
+  // =========================
+  // API ENDPOINT
+  // =========================
   app.get("/api/nosa", async (req, res) => {
-    const url = req.query.url;
+
+    const { url } = req.query;
 
     if (!url) {
-      return res.json({
+      return res.status(400).json({
         status: false,
-        creator: "Mohnd",
-        message: "📌 حط لينك الانستجرام ?url="
+        error: "حط لينك انستجرام ?url="
       });
     }
 
     try {
 
-      const form = new FormData();
-      form.append("url", url);
+      // 1) طلب API الأساسي
+      const data = await fastdl.getInit(url);
 
-      const response = await axios.post(
-        "https://inflact.com/downloader/api/downloader/post/",
-        form,
-        {
-          headers: {
-            ...form.getHeaders(),
-            "User-Agent":
-              "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/146 Mobile Safari/537.36",
-            "Accept-Encoding": "gzip, deflate, br",
-            "sec-ch-ua-platform": '"Android"',
-            "sec-ch-ua": '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
-            "sec-ch-ua-mobile": "?1",
-            "origin": "https://inflact.com",
-            "x-requested-with": "mark.via.gp",
-            "sec-fetch-site": "same-origin",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-dest": "empty",
-            "referer": "https://inflact.com/instagram-downloader/",
-            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-            "priority": "u=1, i"
-          },
-          timeout: 20000,
-          validateStatus: () => true
-        }
-      );
-
-      const data = response.data;
-
-      if (!data || data.status !== "success") {
+      // 2) لو فيه error من الموقع
+      if (!data || data.error) {
         return res.json({
           status: false,
-          creator: "Mohnd",
-          message: "❌ فشل التحميل",
+          message: "فشل التحميل",
           raw: data
         });
       }
 
-      const post = data.data?.post;
-
-      if (!post) {
-        return res.json({
-          status: false,
-          message: "❌ مفيش بيانات"
-        });
-      }
-
-      let results = [];
-
-      // فيديو
-      if (post.video_url) {
-        results.push({
-          type: "video",
-          url: post.video_url
-        });
-      }
-
-      // صور
-      if (Array.isArray(post.display_resources)) {
-        for (const img of post.display_resources) {
-          results.push({
-            type: "image",
-            url: img.src
-          });
-        }
-      }
+      // 3) استخراج الداتا
+      const results = fastdl.parse(data);
 
       return res.json({
         status: true,
-        creator: "Mohnd",
+        creator: "TERBO-SPAM",
         input: url,
-        type: post.__typename || "unknown",
-        thumbnail: post.thumbnail_src || null,
-        caption: post.edge_media_to_caption?.edges?.[0]?.node?.text || "",
-        author: post.owner?.username || "",
+        meta: data.meta,
+        thumb: data.thumb,
         results
       });
 
     } catch (err) {
       return res.status(500).json({
         status: false,
-        creator: "Mohnd",
-        message: "⚠️ حصل خطأ",
         error: err.message
       });
     }
