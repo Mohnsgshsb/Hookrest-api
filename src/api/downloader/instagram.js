@@ -4,8 +4,7 @@ module.exports = function (app) {
 
   const fastdl = {
 
-    // طلب أولي عشان نجيب التوكنات والمتغيرات
-    getInit: async (url) => {
+    getData: async (url) => {
       const res = await axios.post(
         "https://api-wh.fastdl.app/api/convert",
         new URLSearchParams({
@@ -25,20 +24,26 @@ module.exports = function (app) {
       return res.data;
     },
 
-    // محاولة استخراج روابط التحميل
-    parse: (data) => {
-      if (!data || !data.url) return null;
+    extract: (data) => {
 
-      return data.url.map(v => ({
-        url: v.url,
-        type: v.type,
-        ext: v.ext,
-        name: v.name
+      const urls =
+        data?.url ||
+        data?.result?.url ||
+        data?.data?.url ||
+        data?.data?.result?.url ||
+        [];
+
+      if (!Array.isArray(urls) || urls.length === 0) return [];
+
+      return urls.map(v => ({
+        url: v.url || v.src || v.link,
+        type: v.type || "unknown",
+        ext: v.ext || "mp4",
+        name: v.name || "file"
       }));
     }
 
   };
-
 
   // =========================
   // API ENDPOINT
@@ -50,33 +55,30 @@ module.exports = function (app) {
     if (!url) {
       return res.status(400).json({
         status: false,
-        error: "حط لينك انستجرام ?url="
+        message: "📌 حط لينك انستجرام ?url="
       });
     }
 
     try {
 
-      // 1) طلب API الأساسي
-      const data = await fastdl.getInit(url);
+      const data = await fastdl.getData(url);
 
-      // 2) لو فيه error من الموقع
-      if (!data || data.error) {
+      if (!data || data.status === "error") {
         return res.json({
           status: false,
-          message: "فشل التحميل",
+          message: "❌ فشل التحميل",
           raw: data
         });
       }
 
-      // 3) استخراج الداتا
-      const results = fastdl.parse(data);
+      const results = fastdl.extract(data);
 
       return res.json({
         status: true,
         creator: "TERBO-SPAM",
         input: url,
-        meta: data.meta,
-        thumb: data.thumb,
+        meta: data.meta || null,
+        thumb: data.thumb || null,
         results
       });
 
