@@ -4,15 +4,16 @@ const FormData = require("form-data");
 module.exports = function (app) {
 
   app.get("/api/nosa", async (req, res) => {
-    try {
-      const url = req.query.url;
+    const url = req.query.url;
 
-      if (!url) {
-        return res.json({
-          status: false,
-          message: "📌 حط لينك الانستجرام ?url="
-        });
-      }
+    if (!url) {
+      return res.json({
+        status: false,
+        message: "📌 حط لينك الانستجرام ?url="
+      });
+    }
+
+    try {
 
       const form = new FormData();
       form.append("url", url);
@@ -23,19 +24,12 @@ module.exports = function (app) {
         {
           headers: {
             ...form.getHeaders(),
-            "User-Agent": "Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.7680.177 Mobile Safari/537.36",
-            "Accept-Encoding": "gzip, deflate, br, zstd",
-            "sec-ch-ua-platform": '"Android"',
-            "sec-ch-ua": '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
-            "sec-ch-ua-mobile": "?1",
+            "User-Agent":
+              "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/146 Mobile Safari/537.36",
+            "Accept-Encoding": "gzip, deflate, br",
             "origin": "https://inflact.com",
-            "x-requested-with": "mark.via.gp",
-            "sec-fetch-site": "same-origin",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-dest": "empty",
             "referer": "https://inflact.com/instagram-downloader/",
-            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-            "priority": "u=1, i"
+            "x-requested-with": "mark.via.gp"
           },
           timeout: 20000,
           validateStatus: () => true
@@ -63,7 +57,7 @@ module.exports = function (app) {
 
       let results = [];
 
-      // 🎥 فيديو
+      // فيديو
       if (post.video_url) {
         results.push({
           type: "video",
@@ -71,30 +65,32 @@ module.exports = function (app) {
         });
       }
 
-      // 🖼️ صور
-      if (post.display_resources) {
-        post.display_resources.forEach(img => {
-          results.push({
-            type: "image",
-            url: img.src
-          });
-        });
+      // صور
+      if (Array.isArray(post.display_resources)) {
+        for (const img of post.display_resources) {
+          if (img?.src) {
+            results.push({
+              type: "image",
+              url: img.src
+            });
+          }
+        }
       }
 
-      res.json({
+      return res.json({
         status: true,
+        creator: "Mohnd",
         input: url,
-        type: post.__typename,
-        thumbnail: post.thumbnail_src,
-        caption: post.edge_media_to_caption?.edges?.[0]?.node?.text || "",
-        author: post.owner?.username,
+        type: post.__typename || "unknown",
+        thumbnail: post.thumbnail_src || null,
+        caption:
+          post.edge_media_to_caption?.edges?.[0]?.node?.text || "",
+        author: post.owner?.username || "",
         results
       });
 
     } catch (err) {
-      console.error("IGDL ERROR:", err.message);
-
-      res.json({
+      return res.status(500).json({
         status: false,
         message: "⚠️ حصل خطأ",
         error: err.message
