@@ -9,6 +9,7 @@ module.exports = function (app) {
     if (!url) {
       return res.json({
         status: false,
+        creator: "Mohnd",
         message: "📌 حط لينك الانستجرام ?url="
       });
     }
@@ -27,9 +28,17 @@ module.exports = function (app) {
             "User-Agent":
               "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/146 Mobile Safari/537.36",
             "Accept-Encoding": "gzip, deflate, br",
+            "sec-ch-ua-platform": '"Android"',
+            "sec-ch-ua": '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
+            "sec-ch-ua-mobile": "?1",
             "origin": "https://inflact.com",
+            "x-requested-with": "mark.via.gp",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-dest": "empty",
             "referer": "https://inflact.com/instagram-downloader/",
-            "x-requested-with": "mark.via.gp"
+            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+            "priority": "u=1, i"
           },
           timeout: 20000,
           validateStatus: () => true
@@ -41,6 +50,7 @@ module.exports = function (app) {
       if (!data || data.status !== "success") {
         return res.json({
           status: false,
+          creator: "Mohnd",
           message: "❌ فشل التحميل",
           raw: data
         });
@@ -68,12 +78,10 @@ module.exports = function (app) {
       // صور
       if (Array.isArray(post.display_resources)) {
         for (const img of post.display_resources) {
-          if (img?.src) {
-            results.push({
-              type: "image",
-              url: img.src
-            });
-          }
+          results.push({
+            type: "image",
+            url: img.src
+          });
         }
       }
 
@@ -83,8 +91,7 @@ module.exports = function (app) {
         input: url,
         type: post.__typename || "unknown",
         thumbnail: post.thumbnail_src || null,
-        caption:
-          post.edge_media_to_caption?.edges?.[0]?.node?.text || "",
+        caption: post.edge_media_to_caption?.edges?.[0]?.node?.text || "",
         author: post.owner?.username || "",
         results
       });
@@ -92,6 +99,7 @@ module.exports = function (app) {
     } catch (err) {
       return res.status(500).json({
         status: false,
+        creator: "Mohnd",
         message: "⚠️ حصل خطأ",
         error: err.message
       });
