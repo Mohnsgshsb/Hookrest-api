@@ -14,7 +14,7 @@
     }
   },
   "apiSettings": {
-    "creator": "Danz-dev"
+    "creator": "TERBO-SPAM"
   },
   "links": [
     {
@@ -23,18 +23,13 @@
     },
     {
       "name": "Contact Me",
-      "url": "https://wa.me/62895323195263"
+      "url": "https://wa.me/201034526368"
     }
   ],
   "categories": [
     {
       "name": "〘 🕷️ ┊AI┊🩸 〙",
-      "items": [
-        {
-          "name": "🩸┊『 Chatgpt 』↶",
-          "desc": "اتكلم مع GPT",
-          "path": "/ai/chatgpt?question="
-        },
+      "items": [ 
       {
   "name": "🩸┊『 TTS 』↶",
   "desc": "تحويل النص إلى صوت",
@@ -44,11 +39,6 @@
   "name": "🩸┊『 Simsim 』↶",
   "desc": "اتكلم مع سمسم AI",
   "path": "/api/simsim?question="
-        },
-        {
-          "name": "🩸┊『 Kimi 』↶",
-          "desc": "اتكلم مع KIMI",
-          "path": "/ai/kimi?q="
         }
       ]
     },
@@ -71,15 +61,15 @@
       "name": "〘 🕷️ ┊Tools┊🩸 〙",
       "items": [
         {
-          "name": "Text2img",
-          "desc": "Prompt to img style",
-          "path": "/tools/text2img?prompt="
+          "name": "Edit-Img",
+          "desc": "حط لينك الصوره و البرومت",
+          "path": "/api/nano?imageUrl=&prompt="
         },
-        {
-          "name": "To Ghibli",
-          "desc": "Note : dapat down sewaktu-waktu",
-          "path": "/api/ghibli?imageUrl="
-        },
+{
+  "name": "Noise Remove",
+  "desc": "تنقية الصوت من الضوضاء عبر رابط مباشر",
+  "path": "/api/noise?media="
+},
         {
           "name": "Ssweb",
           "desc": "Screenshot website",
@@ -133,27 +123,37 @@
         {
           "name": "Ytmp3",
           "desc": "Download youtube format mp3",
-          "path": "/api/ytmp?url="
-        },
-        {
-          "name": "Ytdl mp3/mp4",
-          "desc": "Download youtube format mp3/320p,720p,1080p",
-          "path": "/api/ytdl?url=&format="
+          "path": "/api/ytmp3?url="
         },
         {
           "name": "Ytmp4",
           "desc": "Download youtube format mp4",
-          "path": "/api/ytmp4?url="
+          "path": "/api/ytconvert/mp4?url="
+        },
+                {
+          "name": "facebook",
+          "desc": "Download Facebook vid",
+          "path": "/api/facebook?url="
+        },
+        {
+          "name": "Pinterest",
+          "desc": "Pinterest vid/img",
+          "path": "/api/pindl?url="
+        },
+        {
+          "name": "Pinterest",
+          "desc": "Pinterest Search",
+          "path": "/api/pinterest?query="
+        },
+        {
+  "name": "Tiktok Search",
+  "desc": "Download Instagram posts, reels, photos",
+  "path": "/api/tiks?text="
         },
         {
   "name": "Instagram Downloader",
   "desc": "Download Instagram posts, reels, photos",
   "path": "/api/instagram?url="
-        },
-        {
-          "name": "Play",
-          "desc": "Play youtube format mp3",
-          "path": "/dl/yt/play?query="
         },
         {
           "name": "TikTok MP4",
