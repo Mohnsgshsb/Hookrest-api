@@ -1,3 +1,4 @@
+
 const axios = require('axios');
 
 module.exports = function (app) {
@@ -11,7 +12,8 @@ module.exports = function (app) {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.7680.177 Mobile Safari/537.36',
             'Accept': 'application/json',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
+            // ❌ شيلنا zstd عشان كان بيبوظ الرد
+            'Accept-Encoding': 'gzip, deflate, br',
             'Content-Type': 'application/json',
             'sec-ch-ua-platform': '"Android"',
             'sec-ch-ua': '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
@@ -22,8 +24,7 @@ module.exports = function (app) {
             'sec-fetch-mode': 'cors',
             'sec-fetch-dest': 'empty',
             'referer': 'https://media.ytmp3.gg/',
-            'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
-            'priority': 'u=1, i'
+            'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'
         },
 
         isUrl: (str) => {
@@ -33,57 +34,39 @@ module.exports = function (app) {
         sleep: (ms) => new Promise(r => setTimeout(r, ms)),
 
         request: async (url) => {
-            let res;
 
-            try {
-                res = await axios.post(
-                    ytdown.api.download,
-                    {
-                        url: url,
-                        os: 'android',
-                        output: {
-                            type: 'audio',
-                            format: 'mp3'
-                        },
-                        audio: {
-                            bitrate: '128k'
-                        }
+            const res = await axios.post(
+                ytdown.api.download,
+                {
+                    url: url,
+                    os: 'android',
+                    output: {
+                        type: 'audio',
+                        format: 'mp3'
                     },
-                    {
-                        headers: ytdown.headers,
-                        responseType: 'json',
-                        validateStatus: () => true
+                    audio: {
+                        bitrate: '128k'
                     }
-                );
-            } catch (err) {
-                throw new Error("فشل الاتصال بالAPI");
-            }
+                },
+                {
+                    headers: ytdown.headers,
+                    responseType: 'json'
+                }
+            );
 
             let data = res.data;
-
-            // 🔥 fallback لو رجع binary
-            if (typeof data !== "object") {
-                try {
-                    const text = Buffer.from(res.data).toString("utf-8");
-                    data = JSON.parse(text);
-                } catch {
-                    throw new Error("الرد مش مفهوم (مش JSON)");
-                }
-            }
 
             // 🔥 لو فيه statusUrl نكمل عليه
             if (data.statusUrl) {
                 let result;
 
-                for (let i = 0; i < 15; i++) {
+                for (let i = 0; i < 20; i++) {
                     const check = await axios.get(data.statusUrl, {
-                        headers: ytdown.headers,
-                        validateStatus: () => true
+                        headers: ytdown.headers
                     });
 
                     result = check.data;
 
-                    // ✅ لو جاهز
                     if (
                         result?.downloadUrl ||
                         result?.url ||
@@ -104,7 +87,6 @@ module.exports = function (app) {
             if (!ytdown.isUrl(link)) throw new Error("لينك غلط 🗿");
 
             const res = await ytdown.request(link);
-
             return ytdown.final(res);
         },
 
