@@ -30,24 +30,71 @@ module.exports = function (app) {
             try { new URL(str); return true; } catch { return false; }
         },
 
+        sleep: (ms) => new Promise(r => setTimeout(r, ms)),
+
         request: async (url) => {
-            const { data } = await axios.post(
-                ytdown.api.download,
-                {
-                    url: url,
-                    os: 'android',
-                    output: {
-                        type: 'audio',
-                        format: 'mp3'
+            let res;
+
+            try {
+                res = await axios.post(
+                    ytdown.api.download,
+                    {
+                        url: url,
+                        os: 'android',
+                        output: {
+                            type: 'audio',
+                            format: 'mp3'
+                        },
+                        audio: {
+                            bitrate: '128k'
+                        }
                     },
-                    audio: {
-                        bitrate: '128k'
+                    {
+                        headers: ytdown.headers,
+                        responseType: 'json',
+                        validateStatus: () => true
                     }
-                },
-                {
-                    headers: ytdown.headers
+                );
+            } catch (err) {
+                throw new Error("فشل الاتصال بالAPI");
+            }
+
+            let data = res.data;
+
+            // 🔥 fallback لو رجع binary
+            if (typeof data !== "object") {
+                try {
+                    const text = Buffer.from(res.data).toString("utf-8");
+                    data = JSON.parse(text);
+                } catch {
+                    throw new Error("الرد مش مفهوم (مش JSON)");
                 }
-            );
+            }
+
+            // 🔥 لو فيه statusUrl نكمل عليه
+            if (data.statusUrl) {
+                let result;
+
+                for (let i = 0; i < 15; i++) {
+                    const check = await axios.get(data.statusUrl, {
+                        headers: ytdown.headers,
+                        validateStatus: () => true
+                    });
+
+                    result = check.data;
+
+                    // ✅ لو جاهز
+                    if (
+                        result?.downloadUrl ||
+                        result?.url ||
+                        result?.status === "completed"
+                    ) break;
+
+                    await ytdown.sleep(2000);
+                }
+
+                return result;
+            }
 
             return data;
         },
@@ -57,12 +104,16 @@ module.exports = function (app) {
             if (!ytdown.isUrl(link)) throw new Error("لينك غلط 🗿");
 
             const res = await ytdown.request(link);
+
             return ytdown.final(res);
         },
 
         final: (data) => ({
             success: true,
-            result: data
+            title: data.title || null,
+            duration: data.duration || null,
+            download: data.downloadUrl || data.url || null,
+            raw: data
         })
     };
 
@@ -79,11 +130,13 @@ module.exports = function (app) {
 
         try {
             const result = await ytdown.download(url);
+
             res.json({
                 status: true,
                 creator: 'Mohnd',
                 ...result
             });
+
         } catch (err) {
             res.status(500).json({
                 status: false,
