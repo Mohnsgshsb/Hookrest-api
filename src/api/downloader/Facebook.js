@@ -74,6 +74,9 @@ module.exports = function (app) {
                 throw new Error("لم يتم استخراج الفيديو");
             }
 
+            const sd = sdMatch[1] ? fbScraper.parseString(sdMatch[1]) : null;
+            const hd = hdMatch?.[1] ? fbScraper.parseString(hdMatch[1]) : null;
+
             return {
                 title: titleMatch?.[1]
                     ? fbScraper.parseString(titleMatch[1])
@@ -83,12 +86,10 @@ module.exports = function (app) {
                     ? fbScraper.parseString(thumbMatch[1])
                     : "",
 
-                sd: fbScraper.parseString(sdMatch[1]),
-                hd: hdMatch?.[1]
-                    ? fbScraper.parseString(hdMatch[1])
-                    : null,
+                url: videoUrl,
 
-                url: videoUrl
+                // 🔥 اختيار تلقائي HD ثم SD
+                video: hd || sd
             };
         }
     };
