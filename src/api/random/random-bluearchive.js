@@ -1,85 +1,92 @@
-const express = require("express");
 const axios = require("axios");
-const cheerio = require("cheerio");
-const qs = require("qs");
 
 module.exports = function (app) {
 
-    app.get("/api/igdl", async (req, res) => {
-        try {
-            const url = req.query.url;
+  app.get("/api/igdl", async (req, res) => {
+    try {
+      const url = req.query.url;
 
-            if (!url) {
-                return res.status(400).json({
-                    status: false,
-                    message: "📌 حط رابط الانستجرام ?url="
-                });
-            }
+      if (!url) {
+        return res.status(400).json({
+          status: false,
+          message: "📌 حط رابط الانستجرام ?url="
+        });
+      }
 
-            // 🔥 تجهيز البيانات زي الموقع
-            const data = qs.stringify({
-                id: url,
-                locale: "en",
-                "cf-turnstile-response": "",
-                tt: "fef583beae21c564cbe86a0a16bd68c7",
-                ts: Date.now()
-            });
+      // 🔥 تجهيز البيانات
+      const data = new URLSearchParams({
+        id: url,
+        locale: "en"
+      });
 
-            const response = await axios.post(
-                "https://reelsvideo.io/",
-                data,
-                {
-                    headers: {
-                        "User-Agent": "Mozilla/5.0",
-                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-                        "origin": "https://reelsvideo.io",
-                        "referer": "https://reelsvideo.io/",
-                        "hx-request": "true"
-                    }
-                }
-            );
+      const response = await axios.post(
+        "https://reelsvideo.io/",
+        data.toString(),
+        {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Linux; Android 10)",
+            "content-type": "application/x-www-form-urlencoded",
+            "origin": "https://reelsvideo.io",
+            "referer": "https://reelsvideo.io/"
+          },
+          timeout: 10000,
 
-            const html = response.data;
-
-            // 🔎 تحليل HTML
-            const $ = cheerio.load(html);
-
-            let results = [];
-
-            $("a").each((i, el) => {
-                const link = $(el).attr("href");
-
-                if (link && link.includes(".mp4")) {
-                    results.push({
-                        type: "video",
-                        url: link
-                    });
-                }
-            });
-
-            if (!results.length) {
-                return res.status(404).json({
-                    status: false,
-                    message: "❌ مفيش نتائج (ممكن الموقع غير الحماية)"
-                });
-            }
-
-            res.json({
-                status: true,
-                input: url,
-                total: results.length,
-                data: results,
-                message: "✅ تم استخراج الفيديو"
-            });
-
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({
-                status: false,
-                message: "⚠️ خطأ في السيرفر",
-                error: err.message
-            });
+          // 👇 أهم سطر يمنع 500
+          validateStatus: () => true
         }
-    });
+      );
+
+      // ❌ لو الموقع رفض
+      if (response.status !== 200) {
+        return res.json({
+          status: false,
+          message: "❌ الموقع رفض الطلب",
+          code: response.status
+        });
+      }
+
+      const html = response.data;
+
+      // ❌ تحقق من الرد
+      if (!html || typeof html !== "string") {
+        return res.json({
+          status: false,
+          message: "❌ رد غير صالح"
+        });
+      }
+
+      // 🔎 استخراج mp4 (سريع وخفيف)
+      const videos = html.match(/https?:\/\/[^"]+\.mp4/g) || [];
+
+      // 🔎 استخراج صور كمان
+      const images = html.match(/https?:\/\/[^"]+\.(jpg|jpeg|png)/g) || [];
+
+      if (!videos.length && !images.length) {
+        return res.json({
+          status: false,
+          message: "❌ مفيش نتائج (غالباً بلوك من الموقع)"
+        });
+      }
+
+      res.json({
+        status: true,
+        input: url,
+        total: videos.length + images.length,
+        videos: videos.map(v => ({ url: v })),
+        images: images.map(v => ({ url: v })),
+        message: "✅ تم الاستخراج"
+      });
+
+    } catch (err) {
+      console.error("IGDL ERROR:", err.message);
+
+      // 👇 عمره ما يرجع 500
+      res.json({
+        status: false,
+        message: "⚠️ حصل خطأ",
+        error: err.message
+      });
+    }
+  });
 
 };
