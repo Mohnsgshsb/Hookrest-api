@@ -5,9 +5,6 @@ const FormData = require("form-data");
 module.exports = function (app) {
 
   const noise = {
-    api: {
-      base: "https://noiseremoval.net/wp-content/plugins/audioenhancer/requests/noiseremoval/noiseremovallimited.php"
-    },
 
     cypher: (t, r = "cryptoJS") => {
       t = t.toString();
@@ -29,7 +26,6 @@ module.exports = function (app) {
     },
 
     run: async (buffer) => {
-
       const ts = Math.floor(Date.now() / 1000);
       const enc = noise.cypher(ts);
 
@@ -46,72 +42,56 @@ module.exports = function (app) {
       form.append("slam_ltol", enc.slam_ltol);
       form.append("iavmol", enc.iavmol);
 
-      const { data } = await axios.post(noise.api.base, form, {
-        headers: {
-          ...form.getHeaders(),
-          accept: "*/*",
-          "x-requested-with": "XMLHttpRequest",
-          referer: "https://noiseremoval.net/",
-          "user-agent": "Mozilla/5.0"
+      const { data } = await axios.post(
+        "https://noiseremoval.net/wp-content/plugins/audioenhancer/requests/noiseremoval/noiseremovallimited.php",
+        form,
+        {
+          headers: {
+            ...form.getHeaders(),
+            "user-agent": "Mozilla/5.0",
+            "x-requested-with": "XMLHttpRequest",
+            "referer": "https://noiseremoval.net/"
+          }
         }
-      });
+      );
 
       return data;
     }
   };
 
   // =========================
-  // REST API ENDPOINT
+  // API (SAME STYLE PROJECT)
   // =========================
   app.post("/api/noise", async (req, res) => {
+
+    const { media } = req.body;
+
+    if (!media) {
+      return res.status(400).json({
+        status: false,
+        error: "حط صوت (url أو base64)"
+      });
+    }
+
     try {
-
-      const { media } = req.body;
-
-      if (!media) {
-        return res.status(400).json({
-          status: false,
-          error: "media required (url or base64)"
-        });
-      }
 
       let buffer;
 
-      // base64
       if (media.startsWith("data:")) {
         buffer = Buffer.from(media.split(",")[1], "base64");
-      }
-
-      // url
-      else if (media.startsWith("http")) {
+      } else {
         const file = await axios.get(media, {
           responseType: "arraybuffer"
         });
         buffer = Buffer.from(file.data);
       }
 
-      else {
-        return res.status(400).json({
-          status: false,
-          error: "invalid media format"
-        });
-      }
-
       const result = await noise.run(buffer);
-
-      if (result?.error) {
-        return res.status(500).json({
-          status: false,
-          error: result.message || "processing failed"
-        });
-      }
 
       return res.json({
         status: true,
         creator: "Mohnd",
-        result: {
-          enhanced: result?.media?.enhanced?.uri || null
-        }
+        result
       });
 
     } catch (err) {
