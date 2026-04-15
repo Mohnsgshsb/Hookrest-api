@@ -1,71 +1,86 @@
 const express = require("express");
+const axios = require("axios");
 const FormData = require("form-data");
-const fetch = require("node-fetch");
 
 module.exports = function (app) {
 
-    app.get("/api/remove-bg", async (req, res) => {
+    const aiLabs = {
+        api: {
+            base: "https://text2video.aritek.app",
+            text2img: "/text2img"
+        },
+        headers: {
+            "user-agent": "NB Android/1.0.0",
+            "accept-encoding": "gzip",
+            "content-type": "application/json",
+            authorization: ""
+        },
+        state: { token: null },
+        setup: {
+            cipher: "hbMcgZLlzvghRlLbPcTbCpfcQKM0PcU0zhPcTlOFMxBZ1oLmruzlVp9remPgi0QWP0QW",
+            shiftValue: 3,
+            dec(text, shift) {
+                return [...text].map(c =>
+                    /[a-z]/.test(c)
+                        ? String.fromCharCode((c.charCodeAt(0) - 97 - shift + 26) % 26 + 97)
+                        : /[A-Z]/.test(c)
+                            ? String.fromCharCode((c.charCodeAt(0) - 65 - shift + 26) % 26 + 65)
+                            : c
+                ).join('');
+            },
+            async decrypt() {
+                if (aiLabs.state.token) return aiLabs.state.token;
+                const decrypted = aiLabs.setup.dec(aiLabs.setup.cipher, aiLabs.setup.shiftValue);
+                aiLabs.state.token = decrypted;
+                aiLabs.headers.authorization = decrypted;
+                return decrypted;
+            }
+        }
+    };
+
+    // 🔥 GET API
+    app.get("/api/ai-image", async (req, res) => {
         try {
+            const prompt = req.query.prompt;
 
-            const url = req.query.url;
-
-            if (!url) {
+            if (!prompt) {
                 return res.status(400).json({
                     status: false,
-                    message: "📌 حط رابط الصورة ?url="
+                    message: "📌 حط prompt ?prompt="
                 });
             }
 
-            // 🔥 تحميل الصورة من الرابط
-            const imgRes = await fetch(url);
-            if (!imgRes.ok) {
-                return res.status(400).json({
-                    status: false,
-                    message: "❌ رابط الصورة غير صالح"
-                });
-            }
+            const token = await aiLabs.setup.decrypt();
 
-            const imageBuffer = Buffer.from(await imgRes.arrayBuffer());
-
-            // 🔥 إرسال لـ Pixelcut API
             const form = new FormData();
+            form.append("prompt", prompt);
+            form.append("token", token);
 
-            form.append("image", imageBuffer, {
-                filename: "image.jpg",
-                contentType: "image/jpeg"
+            const url = aiLabs.api.base + aiLabs.api.text2img;
+
+            const response = await axios.post(url, form, {
+                headers: { ...aiLabs.headers, ...form.getHeaders() }
             });
 
-            form.append("format", "png");
-            form.append("model", "v1");
+            const { code, url: imageUrl } = response.data;
 
-            const response = await fetch("https://api2.pixelcut.app/image/matte/v1", {
-                method: "POST",
-                headers: {
-                    "User-Agent": "Mozilla/5.0",
-                    "Accept": "application/json, text/plain, */*",
-                    "x-locale": "en",
-                    "x-client-version": "web:pixa.com:4a5b0af2",
-                    "origin": "https://www.pixa.com",
-                    "referer": "https://www.pixa.com/"
-                },
-                body: form
-            });
-
-            if (!response.ok) {
+            if (code !== 0 || !imageUrl) {
                 return res.status(500).json({
                     status: false,
-                    message: "❌ فشل إزالة الخلفية"
+                    message: "❌ فشل إنشاء الصورة"
                 });
             }
 
-            const buffer = Buffer.from(await response.arrayBuffer());
-
-            res.setHeader("Content-Type", "image/png");
-            return res.send(buffer);
+            res.json({
+                status: true,
+                prompt,
+                result: imageUrl.trim(),
+                message: "✅ تم إنشاء الصورة"
+            });
 
         } catch (err) {
             console.error(err);
-            return res.status(500).json({
+            res.status(500).json({
                 status: false,
                 message: "⚠️ خطأ في السيرفر",
                 error: err.message
