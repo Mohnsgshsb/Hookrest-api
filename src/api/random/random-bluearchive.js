@@ -1,81 +1,163 @@
 const express = require("express");
 const axios = require("axios");
+const crypto = require("crypto");
 const FormData = require("form-data");
 
 module.exports = function (app) {
 
-    const aiLabs = {
-        api: {
-            base: "https://text2video.aritek.app",
-            text2img: "/text2img"
-        },
-        headers: {
-            "user-agent": "NB Android/1.0.0",
+    class Helper {
+        static BASE_URL = "https://be.aimirror.fun";
+        static UID = Helper.randomHash();
+        static HEADERS = {
+            "User-Agent": "AIMirror/6.8.4+179 (android)",
+            "store": "googleplay",
+            "uid": Helper.UID,
+            "env": "PRO",
+            "accept-language": "en",
             "accept-encoding": "gzip",
+            "package-name": "com.ai.polyverse.mirror",
+            "host": "be.aimirror.fun",
             "content-type": "application/json",
-            authorization: ""
-        },
-        state: { token: null },
-        setup: {
-            cipher: "hbMcgZLlzvghRlLbPcTbCpfcQKM0PcU0zhPcTlOFMxBZ1oLmruzlVp9remPgi0QWP0QW",
-            shiftValue: 3,
-            dec(text, shift) {
-                return [...text].map(c =>
-                    /[a-z]/.test(c)
-                        ? String.fromCharCode((c.charCodeAt(0) - 97 - shift + 26) % 26 + 97)
-                        : /[A-Z]/.test(c)
-                            ? String.fromCharCode((c.charCodeAt(0) - 65 - shift + 26) % 26 + 65)
-                            : c
-                ).join('');
-            },
-            async decrypt() {
-                if (aiLabs.state.token) return aiLabs.state.token;
-                const decrypted = aiLabs.setup.dec(aiLabs.setup.cipher, aiLabs.setup.shiftValue);
-                aiLabs.state.token = decrypted;
-                aiLabs.headers.authorization = decrypted;
-                return decrypted;
+            "app-version": "6.8.4+179"
+        };
+
+        static hash = "";
+        static imageKey = "";
+
+        static randomHash() {
+            const chars = "0123456789abcdef";
+            return Array.from({ length: 16 }, () =>
+                chars[Math.floor(Math.random() * chars.length)]
+            ).join("");
+        }
+
+        static sha1(str) {
+            return crypto.createHash("sha1").update(str, "utf8").digest("hex");
+        }
+
+        static async urlToBuffer(url) {
+            const res = await axios.get(url, { responseType: "arraybuffer" });
+            return Buffer.from(res.data);
+        }
+
+        static async fetchAppToken() {
+            const url = `${this.BASE_URL}/app_token/v2`;
+            const params = {
+                cropped_image_hash: this.hash + ".jpg",
+                uid: this.UID
+            };
+            const res = await axios.get(url, { params, headers: this.HEADERS });
+            return res.data;
+        }
+
+        static async uploadPhoto(payload) {
+            const body = new FormData();
+
+            body.append("name", payload.name);
+            body.append("key", payload.key);
+            body.append("policy", payload.policy);
+            body.append("OSSAccessKeyId", payload.OSSAccessKeyId);
+            body.append("success_action_status", payload.success_action_status);
+            body.append("signature", payload.signature);
+            body.append("backend_type", payload.backend_type);
+            body.append("region", payload.region);
+
+            body.append("file", payload.file, {
+                filename: this.hash + ".jpg",
+                contentType: "image/jpeg"
+            });
+
+            await axios.post(payload.upload_host, body, {
+                headers: { ...body.getHeaders() }
+            });
+        }
+
+        static async requestDraw() {
+            const url = `${this.BASE_URL}/draw?uid=${this.UID}`;
+
+            const data = {
+                model_id: 271,
+                cropped_image_key: this.imageKey,
+                cropped_height: 1024,
+                cropped_width: 768,
+                package_name: "com.ai.polyverse.mirror",
+                ext_args: {
+                    imagine_value2: 50,
+                    custom_prompt: ""
+                },
+                version: "6.8.4",
+                force_default_pose: false,
+                is_free_trial: true
+            };
+
+            const res = await axios.post(url, data, { headers: this.HEADERS });
+            return res.data;
+        }
+
+        static async wait(drawId) {
+            const url = `${this.BASE_URL}/draw/process`;
+
+            while (true) {
+                const res = await axios.get(url, {
+                    headers: this.HEADERS,
+                    params: { draw_request_id: drawId, uid: this.UID }
+                });
+
+                const data = res.data;
+
+                if (data.draw_status === "SUCCEED") {
+                    return data.generated_image_addresses;
+                }
+
+                if (data.draw_status === "FAILED") {
+                    throw new Error("فشل التوليد");
+                }
+
+                await new Promise(r => setTimeout(r, 5000));
             }
         }
-    };
+    }
 
     // 🔥 GET API
-    app.get("/api/ai-image", async (req, res) => {
+    app.get("/api/aimirror", async (req, res) => {
         try {
-            const prompt = req.query.prompt;
+            const imageUrl = req.query.url;
 
-            if (!prompt) {
+            if (!imageUrl) {
                 return res.status(400).json({
                     status: false,
-                    message: "📌 حط prompt ?prompt="
+                    message: "📌 حط رابط الصورة ?url="
                 });
             }
 
-            const token = await aiLabs.setup.decrypt();
+            // 🔽 تحميل الصورة
+            const buffer = await Helper.urlToBuffer(imageUrl);
 
-            const form = new FormData();
-            form.append("prompt", prompt);
-            form.append("token", token);
+            // 🔽 تجهيز الرفع
+            Helper.hash = Helper.sha1(crypto.randomUUID());
+            const token = await Helper.fetchAppToken();
+            Helper.imageKey = token.key;
 
-            const url = aiLabs.api.base + aiLabs.api.text2img;
+            token.file = buffer;
 
-            const response = await axios.post(url, form, {
-                headers: { ...aiLabs.headers, ...form.getHeaders() }
-            });
+            await Helper.uploadPhoto(token);
 
-            const { code, url: imageUrl } = response.data;
+            // 🎨 توليد الصورة
+            const generate = await Helper.requestDraw();
+            const result = await Helper.wait(generate.draw_request_id);
 
-            if (code !== 0 || !imageUrl) {
+            if (!result || !result.length) {
                 return res.status(500).json({
                     status: false,
-                    message: "❌ فشل إنشاء الصورة"
+                    message: "❌ فشل توليد الصورة"
                 });
             }
 
             res.json({
                 status: true,
-                prompt,
-                result: imageUrl.trim(),
-                message: "✅ تم إنشاء الصورة"
+                input: imageUrl,
+                result: result[0],
+                message: "✅ تم توليد الصورة"
             });
 
         } catch (err) {
