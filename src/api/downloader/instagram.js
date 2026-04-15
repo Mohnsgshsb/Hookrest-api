@@ -3,7 +3,7 @@ const FormData = require("form-data");
 
 module.exports = function (app) {
 
-  app.get("/api/igdl1", async (req, res) => {
+  app.get("/api/nosa", async (req, res) => {
     try {
       const url = req.query.url;
 
