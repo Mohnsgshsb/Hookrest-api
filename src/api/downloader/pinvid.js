@@ -25,8 +25,8 @@ module.exports = function (app) {
         }
     }
 
-    // 🔎 البحث في Pinterest
-    async function pinSearch(query, limit = 10) {
+    // 🔎 البحث
+    async function searchPinterest(query, limit = 10) {
         try {
             const cookies = await getCookies();
             if (!cookies) return [];
@@ -51,9 +51,12 @@ module.exports = function (app) {
                 params
             });
 
-            const results = data?.resource_response?.data?.results || [];
+            const results =
+                data?.resource_response?.data?.results ||
+                data?.data?.results ||
+                [];
 
-            const pins = results
+            return results
                 .filter(v => v.images?.orig?.url)
                 .map(v => ({
                     id: v.id,
@@ -62,12 +65,10 @@ module.exports = function (app) {
                     url: `https://pinterest.com/pin/${v.id}`,
                     image: v.images.orig.url,
                     uploader: {
-                        username: v.pinner?.username,
-                        name: v.pinner?.full_name
+                        username: v.pinner?.username || null,
+                        name: v.pinner?.full_name || null
                     }
                 }));
-
-            return pins;
 
         } catch (e) {
             console.error("Pinterest Error:", e.message);
@@ -75,7 +76,7 @@ module.exports = function (app) {
         }
     }
 
-    // 🔥 API ROUTE
+    // 🔥 API ENDPOINT (نفس أسلوبك)
     app.all("/api/pinterest", async (req, res) => {
 
         const text = req.query.text || req.body.text;
@@ -83,31 +84,35 @@ module.exports = function (app) {
         if (!text) {
             return res.status(400).json({
                 status: false,
+                creator: "TERBO-SPAM",
                 message: "📌 حط نص البحث"
             });
         }
 
         try {
-            const results = await pinSearch(text, 10);
+            const results = await searchPinterest(text, 10);
 
             if (!results.length) {
                 return res.status(404).json({
                     status: false,
+                    creator: "TERBO-SPAM",
                     message: `❌ مفيش نتائج لـ: ${text}`
                 });
             }
 
-            res.json({
+            return res.json({
                 status: true,
+                creator: "TERBO-SPAM",
                 query: text,
                 total: results.length,
-                pins: results,
-                message: "✅ تم جلب النتائج"
+                result: results,
+                message: "✅ تم جلب النتائج بنجاح"
             });
 
         } catch (err) {
-            res.status(500).json({
+            return res.status(500).json({
                 status: false,
+                creator: "TERBO-SPAM",
                 message: "⚠️ خطأ في السيرفر",
                 error: err.message
             });
