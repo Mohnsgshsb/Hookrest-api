@@ -1,80 +1,59 @@
-const axios = require("axios");
+const axios = require('axios');
 
 module.exports = function (app) {
+    app.get('/api/lyric', async (req, res) => {
+        const { title } = req.query;
 
-    // 🔎 function البحث
-    async function fetchLyrics(title) {
-        if (!title) throw new Error("A song title is required.");
+        // تحقق من البراميتر
+        if (!title) {
+            return res.status(400).json({
+                status: false,
+                error: 'حط اسم الأغنية'
+            });
+        }
 
-        const url = `https://lrclib.net/api/search?q=${encodeURIComponent(title)}`;
-
-        const { data } = await axios.get(url, {
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-            }
-        });
-
-        return data;
-    }
-
-    // 🔥 endpoint
-    app.get("/api/lyric", async (req, res) => {
         try {
-            const { query } = req.query;
+            const { data } = await axios.get(
+                `https://lrclib.net/api/search?q=${encodeURIComponent(title)}`,
+                {
+                    headers: {
+                        referer: `https://lrclib.net/search/${encodeURIComponent(title)}`,
+                        'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36'
+                    },
+                    timeout: 20000
+                }
+            );
 
-            if (!query) {
+            if (!data || data.length === 0) {
                 return res.json({
                     status: false,
-                    creator: "TERBO-SPAM",
-                    message: "❌ اكتب اسم الأغنية ?query="
+                    message: 'مفيش نتايج'
                 });
             }
 
-            const results = await fetchLyrics(query);
+            // نختار أول نتيجة
+            const song = data[0];
 
-            if (!results || results.length === 0) {
-                return res.json({
-                    status: false,
-                    creator: "TERBO-SPAM",
-                    message: "❌ مفيش نتايج"
-                });
-            }
+            const result = {
+                title: song.trackName,
+                artist: song.artistName,
+                album: song.albumName,
+                duration: song.duration,
+                lyrics: song.syncedLyrics || song.plainLyrics || null
+            };
 
-            const song = results[0];
-
-            const lyricsText = song.syncedLyrics || song.plainLyrics;
-
-            if (!lyricsText) {
-                return res.json({
-                    status: false,
-                    creator: "TERBO-SPAM",
-                    message: "❌ مفيش كلمات للأغنية"
-                });
-            }
-
-            res.json({
+            return res.json({
                 status: true,
                 creator: "TERBO-SPAM",
-                input: query,
-                result: {
-                    title: song.trackName,
-                    artist: song.artistName,
-                    album: song.albumName,
-                    duration: song.duration,
-                    lyrics: lyricsText
-                }
+                result
             });
 
         } catch (err) {
-            console.error("Lyrics Error:", err);
-
-            res.status(500).json({
+            return res.status(500).json({
                 status: false,
-                creator: "TERBO-SPAM",
-                message: "❌ حصل خطأ",
-                error: err.message
+                error: 'حصل مشكلة في السيرفر',
+                message: err.message
             });
         }
     });
-
-};ج
+};
