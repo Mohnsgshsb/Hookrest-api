@@ -2,54 +2,71 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-    app.get("/api/apk", async (req, res) => {
+    // 🔎 function البحث
+    async function fetchLyrics(title) {
+        if (!title) throw new Error("A song title is required.");
+
+        const url = `https://lrclib.net/api/search?q=${encodeURIComponent(title)}`;
+
+        const { data } = await axios.get(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            }
+        });
+
+        return data;
+    }
+
+    // 🔥 endpoint
+    app.get("/api/lyric", async (req, res) => {
         try {
             const { query } = req.query;
 
-            // ❌ مفيش اسم تطبيق
             if (!query) {
                 return res.json({
                     status: false,
                     creator: "TERBO-SPAM",
-                    message: "❌ اكتب اسم التطبيق ?query="
+                    message: "❌ اكتب اسم الأغنية ?query="
                 });
             }
 
-            // 🔗 API بتاع Aptoide
-            const apiUrl = `http://ws75.aptoide.com/api/7/apps/search/query=${encodeURIComponent(query)}/limit=1`;
+            const results = await fetchLyrics(query);
 
-            const response = await axios.get(apiUrl);
-            const data = response.data;
-
-            // ❌ مفيش نتائج
-            if (!data.datalist || !data.datalist.list || !data.datalist.list.length) {
+            if (!results || results.length === 0) {
                 return res.json({
                     status: false,
                     creator: "TERBO-SPAM",
-                    message: "❌ مفيش APK"
+                    message: "❌ مفيش نتايج"
                 });
             }
 
-            const appData = data.datalist.list[0];
-            const sizeMB = (appData.size / (1024 * 1024)).toFixed(2);
+            const song = results[0];
 
-            // ✅ الرد
+            const lyricsText = song.syncedLyrics || song.plainLyrics;
+
+            if (!lyricsText) {
+                return res.json({
+                    status: false,
+                    creator: "TERBO-SPAM",
+                    message: "❌ مفيش كلمات للأغنية"
+                });
+            }
+
             res.json({
                 status: true,
                 creator: "TERBO-SPAM",
                 input: query,
                 result: {
-                    name: appData.name,
-                    package: appData.package,
-                    updated: appData.updated,
-                    size: sizeMB + " MB",
-                    icon: appData.icon,
-                    download: appData.file.path_alt
+                    title: song.trackName,
+                    artist: song.artistName,
+                    album: song.albumName,
+                    duration: song.duration,
+                    lyrics: lyricsText
                 }
             });
 
         } catch (err) {
-            console.log(err);
+            console.error("Lyrics Error:", err);
 
             res.status(500).json({
                 status: false,
@@ -60,4 +77,4 @@ module.exports = function (app) {
         }
     });
 
-};
+};ج
