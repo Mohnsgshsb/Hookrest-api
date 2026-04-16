@@ -2,49 +2,43 @@ const axios = require('axios');
 
 module.exports = function (app) {
 
-    app.get('/search/github', async (req, res) => {
+    app.get('api/pinterest', async (req, res) => {
         const { query } = req.query;
 
         if (!query) {
             return res.status(400).json({
                 status: false,
-                error: 'Parameter "query" مطلوب.'
+                error: "حط كلمة البحث"
             });
         }
 
         try {
-            const { data } = await axios.get(`https://api.github.com/search/repositories`, {
-                params: {
-                    q: query,
-                    per_page: 10
-                },
-                headers: {
-                    'User-Agent': 'Mozilla/5.0'
+            const { data } = await axios.get(
+                `https://www.pinterest.com/search/pins/?rs=typed&q=${encodeURIComponent(query)}`,
+                {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0'
+                    }
                 }
-            });
+            );
 
-            const result = data.items.map(repo => ({
-                name: repo.name,
-                full_name: repo.full_name,
-                url: repo.html_url,
-                description: repo.description,
-                stars: repo.stargazers_count,
-                forks: repo.forks_count,
-                language: repo.language,
-                owner: repo.owner.login
-            }));
+            // استخراج الصور
+            const images = [...data.matchAll(/"url":"(https:\/\/i\.pinimg\.com[^"]+)"/g)]
+                .map(v => v[1].replace(/\\u002F/g, '/'));
+
+            // حذف التكرار + أول 15
+            const unique = [...new Set(images)].slice(0, 15);
 
             res.json({
                 status: true,
-                total: result.length,
-                result
+                total: unique.length,
+                result: unique
             });
 
         } catch (err) {
             res.status(500).json({
                 status: false,
-                error: 'فشل في جلب البيانات من GitHub',
-                message: err.message
+                error: err.message
             });
         }
     });
