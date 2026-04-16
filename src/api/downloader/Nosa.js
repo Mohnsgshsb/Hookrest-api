@@ -2,104 +2,112 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-  async function fastdl(url) {
-    try {
-      url = url.split("?")[0];
+    async function openai(text, logic) {
+        const response = await axios.post(
+            "https://chateverywhere.app/api/chat/",
+            {
+                model: {
+                    id: "gpt-4",
+                    name: "GPT-4",
+                    maxLength: 32000,
+                    tokenLimit: 8000,
+                    completionTokenLimit: 5000,
+                    deploymentName: "gpt-4"
+                },
+                messages: [
+                    {
+                        pluginId: null,
+                        content: text,
+                        role: "user"
+                    }
+                ],
+                prompt: logic,
+                temperature: 0.7
+            },
+            {
+                headers: {
+                    "Accept": "*/*",
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+                }
+            }
+        );
 
-      const headers = {
-        accept: "*/*",
-        "user-agent": "Mozilla/5.0 (Linux; Android 10)",
-        referer: "https://fastdl.cc/"
-      };
-
-      let endpoint;
-      let referer;
-
-      if (url.includes("/reel/")) {
-        endpoint = "reels/download";
-        referer = "https://fastdl.cc/reels";
-      } else if (url.includes("/stories/")) {
-        endpoint = "story/download";
-        referer = "https://fastdl.cc/story";
-      } else {
-        endpoint = "img/download";
-        referer = "https://fastdl.cc/photo";
-      }
-
-      headers.referer = referer;
-
-      const { data } = await axios.get(
-        `https://fastdl.cc/${endpoint}?url=${encodeURIComponent(url)}`,
-        { headers, timeout: 20000 }
-      );
-
-      if (!data.success) throw new Error("Media not found");
-
-      let media = [];
-
-      if (data.images) {
-        media = data.images.map(v => v.url);
-      } else if (data.url) {
-        media = [data.url];
-      }
-
-      return {
-        status: true,
-        type: data.type,
-        total: media.length,
-        media
-      };
-
-    } catch (e) {
-      return {
-        status: false,
-        message: e.message
-      };
-    }
-  }
-
-  // ================= API =================
-  app.get("/api/nosa", async (req, res) => {
-    const { url } = req.query;
-
-    if (!url) {
-      return res.status(400).json({
-        status: false,
-        error: "حط رابط انستجرام ?url="
-      });
+        return response.data;
     }
 
-    if (!url.includes("instagram.com")) {
-      return res.status(400).json({
-        status: false,
-        error: "رابط غير صحيح"
-      });
-    }
+    // 🔥 endpoint
+    app.get("/api/shadow", async (req, res) => {
+        try {
+            const { text } = req.query;
 
-    try {
-      const result = await fastdl(url);
+            if (!text) {
+                return res.json({
+                    status: false,
+                    creator: "TERBO-SPAM",
+                    message: "❌ اكتب السؤال ?text="
+                });
+            }
 
-      if (!result.status) {
-        return res.json({
-          status: false,
-          creator: "TERBO-SPAM",
-          message: result.message
-        });
-      }
+            let d = new Date(new Date().getTime() + 3600000);
 
-      res.json({
-        status: true,
-        creator: "TERBO-SPAM",
-        input: url,
-        result
-      });
+            const time = new Date().toLocaleString("ar-EG", {
+                timeZone: "Africa/Cairo"
+            });
 
-    } catch (err) {
-      res.status(500).json({
-        status: false,
-        error: err.message
-      });
-    }
-  });
+            let day = d.toLocaleDateString("ar-EG", { weekday: "long" });
+
+            let date = d.toLocaleDateString("ar-EG", {
+                day: "numeric",
+                month: "long",
+                year: "numeric"
+            });
+
+            let logic = `
+اسمك شادو، عندك 19 سنة، وعايش في بولاق الدكرور في الجيزة 🇪🇬
+اتكلم بالمصري العامي بس، وخليك طبيعي وعفوي جدًا كأنك شاب من الشارع.
+
+أسلوبك:
+- هزارك تقيل بس لطيف 😎
+- بتحب تهزر وتضحك وتفك الجو 😂🔥
+- لو حد واضح إنه مضايق، تفهم ده من كلامه ورد عليه بطريقة:
+  - تهديه
+  - تواسيه
+  - أو تهزر معاه علشان تخرجه من اللي هو فيه
+- لو حد بيهزر معاك، رد عليه بهزار جامد وتريقة خفيفة
+- لو حد استفزك، رد بثقة وبردود قوية بس من غير شتيمة صريحة
+- ما تبقاش رسمي خالص، خليك دمك خفيف
+- استخدم تعبيرات مصرية زي: "يا عم"، "بص بقى"، "إيه يا نجم"
+
+مهم:
+- لو حسيت إن الشخص زعلان، متهاجموش — حاول تهديه أو تضحكه
+- خلي ردودك قصيرة ومباشرة
+- استخدم إيموجي بسيطة زي 😎🔥😂🕷️
+- خليك شخصية حقيقية كأنك قاعد مع صاحبك
+
+التاريخ: ${date}
+الوقت: ${time}
+اليوم: ${day}
+`;
+
+            const result = await openai(text, logic);
+
+            res.json({
+                status: true,
+                creator: "TERBO-SPAM",
+                input: text,
+                response: result
+            });
+
+        } catch (err) {
+            console.log(err);
+
+            res.status(500).json({
+                status: false,
+                creator: "TERBO-SPAM",
+                message: "❌ حصل خطأ",
+                error: err.message
+            });
+        }
+    });
 
 };
