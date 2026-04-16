@@ -2,41 +2,7 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-    async function openai(text, logic) {
-        const response = await axios.post(
-            "https://chateverywhere.app/api/chat/",
-            {
-                model: {
-                    id: "gpt-4",
-                    name: "GPT-4",
-                    maxLength: 32000,
-                    tokenLimit: 8000,
-                    completionTokenLimit: 5000,
-                    deploymentName: "gpt-4"
-                },
-                messages: [
-                    {
-                        pluginId: null,
-                        content: text,
-                        role: "user"
-                    }
-                ],
-                prompt: logic,
-                temperature: 0.7
-            },
-            {
-                headers: {
-                    "Accept": "*/*",
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-                }
-            }
-        );
-
-        return response.data;
-    }
-
-    // 🔥 endpoint
-    app.get("/api/shadow", async (req, res) => {
+    app.get("/api/chat", async (req, res) => {
         try {
             const { text } = req.query;
 
@@ -48,54 +14,57 @@ module.exports = function (app) {
                 });
             }
 
-            let d = new Date(new Date().getTime() + 3600000);
+            const payload = {
+                model: {
+                    id: "gpt-3.5-turbo",
+                    name: "GPT-3.5",
+                    maxLength: 12000,
+                    tokenLimit: 4000
+                },
+                messages: [
+                    {
+                        pluginId: null,
+                        content: text,
+                        role: "user"
+                    }
+                ],
+                prompt: `You are an AI language model named Chat Everywhere, designed to answer user questions as accurately and helpfully as possible.`,
+                temperature: 0.5,
+                enableConversationPrompt: false
+            };
 
-            const time = new Date().toLocaleString("ar-EG", {
-                timeZone: "Africa/Cairo"
-            });
-
-            let day = d.toLocaleDateString("ar-EG", { weekday: "long" });
-
-            let date = d.toLocaleDateString("ar-EG", {
-                day: "numeric",
-                month: "long",
-                year: "numeric"
-            });
-
-            let logic = `
-اسمك شادو، عندك 19 سنة، وعايش في بولاق الدكرور في الجيزة 🇪🇬
-اتكلم بالمصري العامي بس، وخليك طبيعي وعفوي جدًا كأنك شاب من الشارع.
-
-أسلوبك:
-- هزارك تقيل بس لطيف 😎
-- بتحب تهزر وتضحك وتفك الجو 😂🔥
-- لو حد واضح إنه مضايق، تفهم ده من كلامه ورد عليه بطريقة:
-  - تهديه
-  - تواسيه
-  - أو تهزر معاه علشان تخرجه من اللي هو فيه
-- لو حد بيهزر معاك، رد عليه بهزار جامد وتريقة خفيفة
-- لو حد استفزك، رد بثقة وبردود قوية بس من غير شتيمة صريحة
-- ما تبقاش رسمي خالص، خليك دمك خفيف
-- استخدم تعبيرات مصرية زي: "يا عم"، "بص بقى"، "إيه يا نجم"
-
-مهم:
-- لو حسيت إن الشخص زعلان، متهاجموش — حاول تهديه أو تضحكه
-- خلي ردودك قصيرة ومباشرة
-- استخدم إيموجي بسيطة زي 😎🔥😂🕷️
-- خليك شخصية حقيقية كأنك قاعد مع صاحبك
-
-التاريخ: ${date}
-الوقت: ${time}
-اليوم: ${day}
-`;
-
-            const result = await openai(text, logic);
+            const { data } = await axios.post(
+                "https://chateverywhere.app/api/chat",
+                payload,
+                {
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.7680.177 Mobile Safari/537.36",
+                        "Accept-Encoding": "gzip, deflate, br, zstd",
+                        "Content-Type": "application/json",
+                        "sec-ch-ua-platform": '"Android"',
+                        "user-selected-plugin-id": "",
+                        "sec-ch-ua": '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
+                        "sec-ch-ua-mobile": "?1",
+                        "user-browser-id": "92e125bf-4f95-4fc6-92b6-77be97badd38",
+                        "output-language": "",
+                        "origin": "https://chateverywhere.app",
+                        "x-requested-with": "mark.via.gp",
+                        "sec-fetch-site": "same-origin",
+                        "sec-fetch-mode": "cors",
+                        "sec-fetch-dest": "empty",
+                        "referer": "https://chateverywhere.app/",
+                        "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+                        "priority": "u=1, i",
+                        "Cookie": "ph_phc_9n85Ky3ZOEwVZlg68f8bI3jnOJkaV8oVGGJcoKfXyn1_posthog=%7B%22distinct_id%22%3A%2292e125bf-4f95-4fc6-92b6-77be97badd38%22%7D"
+                    }
+                }
+            );
 
             res.json({
                 status: true,
                 creator: "TERBO-SPAM",
                 input: text,
-                response: result
+                result: data
             });
 
         } catch (err) {
