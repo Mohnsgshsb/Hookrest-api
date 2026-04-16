@@ -182,7 +182,7 @@
         {
           "name": "Pinterest",
           "desc": "Pinterest Search",
-          "path": "/api/pinterest?query="
+          "path": "/api/pinterest?text="
         },
         {
   "name": "Tiktok Search",
