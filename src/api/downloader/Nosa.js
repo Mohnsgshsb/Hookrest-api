@@ -75,7 +75,7 @@ const gemini = {
 };
 
 module.exports = function (app) {
-  app.get("/api/gemini", async (req, res) => {
+  app.get("/api/gemin", async (req, res) => {
     const { prompt } = req.query;
 
     if (!prompt) {
