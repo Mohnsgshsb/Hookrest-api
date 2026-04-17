@@ -2,74 +2,41 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-    const BASE = "https://spotmate.online";
+    const BASE = "https://gamepvz.com";
 
-    // 🍪 جلب كوكيز جديدة
-    async function getCookies() {
+    async function download(url) {
         try {
-            const res = await axios.get(`${BASE}/en1`, {
-                headers: {
-                    "User-Agent":
-                        "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/146"
+            const { data } = await axios.post(
+                `${BASE}/api/download/get-url`,
+                {
+                    url
                 },
-                timeout: 15000
-            });
+                {
+                    headers: {
+                        "User-Agent":
+                            "Mozilla/5.0 (Linux; Android 15) Chrome/146",
+                        "sec-ch-ua-platform": '"Android"',
+                        "sec-ch-ua": '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
+                        "sec-ch-ua-mobile": "?1",
+                        "origin": BASE,
+                        "x-requested-with": "mark.via.gp",
+                        "referer": `${BASE}/ar`,
+                        "accept-language": "en-GB,en-US;q=0.9,en;q=0.8"
+                    },
+                    timeout: 30000
+                }
+            );
 
-            const cookies = res.headers["set-cookie"];
-            if (!cookies) return "";
+            return data;
 
-            return cookies.map(c => c.split(";")[0]).join("; ");
-        } catch {
-            return "";
+        } catch (e) {
+            console.error("PVZ API Error:", e.message);
+            return null;
         }
     }
 
-    // 🎧 جلب معلومات التراك
-    async function getTrackData(url, cookie) {
-        const { data } = await axios.post(
-            `${BASE}/getTrackData`,
-            { spotify_url: url },
-            {
-                headers: {
-                    "User-Agent":
-                        "Mozilla/5.0 (Linux; Android 15) Chrome/146",
-                    "Content-Type": "application/json",
-                    "origin": BASE,
-                    "referer": `${BASE}/en1`,
-                    "x-requested-with": "mark.via.gp",
-                    "Cookie": cookie
-                },
-                timeout: 30000
-            }
-        );
-
-        return data;
-    }
-
-    // 🔥 تحويل لتحميل mp3
-    async function convertTrack(url, cookie) {
-        const { data } = await axios.post(
-            `${BASE}/convert`,
-            { urls: url },
-            {
-                headers: {
-                    "User-Agent":
-                        "Mozilla/5.0 (Linux; Android 15) Chrome/146",
-                    "Content-Type": "application/json",
-                    "origin": BASE,
-                    "referer": `${BASE}/en1`,
-                    "x-requested-with": "mark.via.gp",
-                    "Cookie": cookie
-                },
-                timeout: 30000
-            }
-        );
-
-        return data;
-    }
-
-    // 🚀 API
-    app.all("/api/s/spotify/full", async (req, res) => {
+    // 🔥 REST API
+    app.all("/api/s/spotify/pvz", async (req, res) => {
 
         const url = req.query.url || req.body.url;
 
@@ -83,23 +50,29 @@ module.exports = function (app) {
         if (!url.includes("open.spotify.com/track")) {
             return res.json({
                 status: false,
-                message: "invalid spotify track url"
+                message: "invalid spotify url"
             });
         }
 
         try {
-            const cookie = await getCookies();
+            const result = await download(url);
 
-            // 1️⃣ track info
-            const info = await getTrackData(url, cookie);
+            if (!result || result.code !== 200) {
+                return res.json({
+                    status: false,
+                    message: "failed to fetch data"
+                });
+            }
 
-            // 2️⃣ download link
-            const download = await convertTrack(url, cookie);
+            // 🔥 بناء لينك تحميل مباشر
+            const downloadUrl = `${BASE}${result.originalVideoUrl}`;
 
             return res.json({
                 status: true,
-                info,
-                download_url: download?.url || null
+                title: result.title,
+                author: result.authorName,
+                cover: result.coverUrl,
+                url: downloadUrl
             });
 
         } catch (e) {
