@@ -4,79 +4,66 @@ module.exports = function (app) {
 
     const BASE = "https://gamepvz.com";
 
-    async function download(url) {
-        try {
-            const { data } = await axios.post(
-                `${BASE}/api/download/get-url`,
-                {
-                    url
-                },
-                {
-                    headers: {
-                        "User-Agent":
-                            "Mozilla/5.0 (Linux; Android 15) Chrome/146",
-                        "sec-ch-ua-platform": '"Android"',
-                        "sec-ch-ua": '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
-                        "sec-ch-ua-mobile": "?1",
-                        "origin": BASE,
-                        "x-requested-with": "mark.via.gp",
-                        "referer": `${BASE}/ar`,
-                        "accept-language": "en-GB,en-US;q=0.9,en;q=0.8"
-                    },
-                    timeout: 30000
+    // 🔥 جلب بيانات + رابط التحميل
+    async function getDownloadUrl(trackUrl) {
+        const { data } = await axios.post(
+            `${BASE}/api/download/get-url`,
+            { url: trackUrl },
+            {
+                headers: {
+                    "User-Agent":
+                        "Mozilla/5.0 (Linux; Android 15) Chrome/146",
+                    "origin": BASE,
+                    "x-requested-with": "mark.via.gp"
                 }
-            );
+            }
+        );
 
-            return data;
-
-        } catch (e) {
-            console.error("PVZ API Error:", e.message);
-            return null;
-        }
+        return data;
     }
 
-    // 🔥 REST API
-    app.all("/api/s/spotify/pvz", async (req, res) => {
+    // 🚀 REST API (DIRECT STREAM DOWNLOAD)
+    app.all("/api/s/spotify/download", async (req, res) => {
 
         const url = req.query.url || req.body.url;
 
         if (!url) {
-            return res.json({
+            return res.status(400).json({
                 status: false,
-                message: "send spotify url"
-            });
-        }
-
-        if (!url.includes("open.spotify.com/track")) {
-            return res.json({
-                status: false,
-                message: "invalid spotify url"
+                message: "spotify url required"
             });
         }
 
         try {
-            const result = await download(url);
+            const data = await getDownloadUrl(url);
 
-            if (!result || result.code !== 200) {
-                return res.json({
+            if (!data?.originalVideoUrl) {
+                return res.status(500).json({
                     status: false,
-                    message: "failed to fetch data"
+                    message: "failed to get download link"
                 });
             }
 
-            // 🔥 بناء لينك تحميل مباشر
-            const downloadUrl = `${BASE}${result.originalVideoUrl}`;
+            const downloadUrl = `${BASE}${data.originalVideoUrl}`;
 
-            return res.json({
-                status: true,
-                title: result.title,
-                author: result.authorName,
-                cover: result.coverUrl,
-                url: downloadUrl
+            // 🔥 بدل ما نرجّع JSON → هنحوّلها Download مباشر
+            const audio = await axios.get(downloadUrl, {
+                responseType: "stream"
             });
 
+            // headers عشان يعتبره ملف تحميل
+            res.setHeader("Content-Type", "audio/mpeg");
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="${data.title || "spotify"}.mp3"`
+            );
+
+            // 🔥 pipe مباشر للملف
+            audio.data.pipe(res);
+
         } catch (e) {
-            return res.status(500).json({
+            console.log(e);
+            res.status(500).json({
                 status: false,
                 error: e.message
             });
