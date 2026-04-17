@@ -1,119 +1,83 @@
 const axios = require("axios");
-const Buffer = require("buffer").Buffer;
 
 module.exports = function (app) {
 
-    // ⏱️ تحويل المدة
-    function convert(ms) {
-        const minutes = Math.floor(ms / 60000);
-        const seconds = ((ms % 60000) / 1000).toFixed(0);
-        return minutes + ":" + (Number(seconds) < 10 ? "0" : "") + seconds;
-    }
-
-    // 🔐 جلب توكن سبوتيفاي
-    async function spotifyCreds() {
+    async function downloadSpotify(url) {
         try {
-            const response = await axios.post(
-                "https://accounts.spotify.com/api/token",
-                "grant_type=client_credentials",
+            const { data } = await axios.post(
+                "https://spotmate.online/convert",
+                {
+                    urls: url
+                },
                 {
                     headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        Authorization:
-                            "Basic " +
-                            Buffer.from(
-                                "7bbae52593da45c69a27c853cc22edff:88ae1f7587384f3f83f62a279e7f87af"
-                            ).toString("base64"),
-                    },
-                    timeout: 30000,
-                }
-            );
+                        'User-Agent': 'Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.7680.177 Mobile Safari/537.36',
+                        'Accept-Encoding': 'gzip, deflate, br, zstd',
+                        'Content-Type': 'application/json',
+                        'sec-ch-ua-platform': '"Android"',
+                        'sec-ch-ua': '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
+                        'sec-ch-ua-mobile': '?1',
+                        'origin': 'https://spotmate.online',
+                        'x-requested-with': 'mark.via.gp',
+                        'sec-fetch-site': 'same-origin',
+                        'sec-fetch-mode': 'cors',
+                        'sec-fetch-dest': 'empty',
+                        'referer': 'https://spotmate.online/en1',
+                        'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+                        'priority': 'u=1, i',
 
-            return response.data.access_token
-                ? { status: true, access_token: response.data.access_token }
-                : { status: false, msg: "Can't generate token" };
-
-        } catch (e) {
-            return { status: false, msg: e.message };
-        }
-    }
-
-    // 🔎 البحث في Spotify
-    async function searchSpotify(query, limit = 20) {
-        try {
-            const creds = await spotifyCreds();
-            if (!creds.status) return [];
-
-            const { data } = await axios.get(
-                "https://api.spotify.com/v1/search",
-                {
-                    headers: {
-                        Authorization: `Bearer ${creds.access_token}`
-                    },
-                    params: {
-                        q: query,
-                        type: "track",
-                        limit: Math.min(limit, 50),
-                        market: "US"
+                        // 🍪 Cookies (مهم جداً)
+                        'Cookie': 'XSRF-TOKEN=eyJpdiI6IkJHNERBOElLWWJPcUFhM2w0T2pHRGc9PSIsInZhbHVlIjoiY2FqWG56UW1aUzRuS2lMZHE5NGJuZHMyckNsbDFuYldCM3BCZ0VmK3V5YjVYY1RFTXVMNktWOHM1THhSQUhHMWNFMlpOTVNmdHdBOGZGSTJiQzZ4dHVJV0dVTFc3ZjQ1NFdIYlJDVklLRnVMaEk4QTV4anpBSXRKbW9QQjltcU8iLCJtYWMiOiI2YWMzZDM3ZjFkMTUyNzRkNGVmYTFkOGM1N2NmY2JhMmYwNWNjZjFkYmE2ODAxNWY3YTE2OTM5OWUxN2M5YjFjIiwidGFnIjoiIn0%3D; spotmateonline_session=eyJpdiI6Iml6NmhaTE16L3VaTS9qYkRuemowcmc9PSIsInZhbHVlIjoiWGlVamJYbGtreEVURlJ6b3RrYnFjaDhoeVROVStZdDJNWlRLa3JpZWYzTS9PRU9GUDJBL29xYmlSSDA4ejNqRE13NGRkc2ZVREU1WHRUY0tQSmd5MmdLVzRBMlJKRXVDUklUN2wvSFRUa1hzcVFDOFVWQ1Q3S1pyTnFDS3ptRUQiLCJtYWMiOiIwNzU2ZjExZTg2NjNlOGM4ZGE5YzdlOTgxNDdhZWQ5MjJmMjIxNmVkMGMzY2E4ZTYwZDhiMGI3ZGMxOTc2NTcyIiwidGFnIjoiIn0%3D'
                     },
                     timeout: 30000
                 }
             );
 
-            const tracks = data?.tracks?.items || [];
-
-            return tracks.map(item => ({
-                track_url: item.external_urls.spotify,
-                thumbnail: item.album.images?.[0]?.url || null,
-                title: `${item.artists?.[0]?.name} - ${item.name}`,
-                artist: item.artists?.[0]?.name,
-                duration: convert(item.duration_ms),
-                preview_url: item.preview_url || null,
-                album: item.album.name,
-                release_date: item.album.release_date
-            }));
+            return data;
 
         } catch (e) {
-            console.error("Spotify Error:", e.message);
-            return [];
+            console.error("Spotify Download Error:", e.message);
+            return null;
         }
     }
 
     // 🔥 REST API
-    app.all("/api/s/spotify", async (req, res) => {
+    app.all("/api/s/spotify/download", async (req, res) => {
 
-        const query = req.query.query || req.body.query;
+        const url = req.query.url || req.body.url;
 
-        if (!query) {
+        if (!url) {
             return res.status(400).json({
                 status: false,
-                message: "📌 حط كلمة البحث"
+                message: "📌 حط رابط Spotify"
             });
         }
 
-        if (typeof query !== "string" || !query.trim()) {
+        if (!url.includes("open.spotify.com/track")) {
             return res.status(400).json({
                 status: false,
-                message: "❌ query لازم يكون نص"
+                message: "❌ لازم Track URL صحيح"
             });
         }
 
         try {
-            const result = await searchSpotify(query.trim(), 20);
+            const result = await downloadSpotify(url);
 
-            if (!result.length) {
-                return res.status(404).json({
+            if (!result) {
+                return res.status(500).json({
                     status: false,
-                    message: `❌ مفيش نتائج لـ: ${query}`
+                    message: "❌ فشل التحميل"
                 });
             }
 
+            // 🔥 نرجّع اللينك المباشر لو موجود
             return res.json({
                 status: true,
-                query,
-                total: result.length,
-                data: result,
-                message: "✅ تم جلب النتائج"
+                error: false,
+                url,
+                download: result.url || null,
+                raw: result,
+                message: "✅ تم جلب رابط التحميل المباشر"
             });
 
         } catch (err) {
