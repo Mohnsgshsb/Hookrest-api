@@ -2,7 +2,7 @@ const axios = require('axios');
 
 module.exports = function (app) {
 
-    app.get('api/pinterest', async (req, res) => {
+    app.get('/pinterest', async (req, res) => {
         const { query } = req.query;
 
         if (!query) {
