@@ -1,61 +1,86 @@
 const axios = require("axios");
+const Buffer = require("buffer").Buffer;
 
 module.exports = function (app) {
 
-    // 🔎 البحث في SoundCloud
-    async function searchSoundCloud(query) {
+    // ⏱️ تحويل المدة
+    function convert(ms) {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = ((ms % 60000) / 1000).toFixed(0);
+        return minutes + ":" + (Number(seconds) < 10 ? "0" : "") + seconds;
+    }
+
+    // 🔐 جلب توكن سبوتيفاي
+    async function spotifyCreds() {
         try {
-            const baseUrl = "https://api-mobi.soundcloud.com/search";
+            const response = await axios.post(
+                "https://accounts.spotify.com/api/token",
+                "grant_type=client_credentials",
+                {
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        Authorization:
+                            "Basic " +
+                            Buffer.from(
+                                "7bbae52593da45c69a27c853cc22edff:88ae1f7587384f3f83f62a279e7f87af"
+                            ).toString("base64"),
+                    },
+                    timeout: 30000,
+                }
+            );
 
-            const params = {
-                q: query,
-                client_id: "KKzJxmw11tYpCs6T24P4uUYhqmjalG6M",
-                stage: ""
-            };
+            return response.data.access_token
+                ? { status: true, access_token: response.data.access_token }
+                : { status: false, msg: "Can't generate token" };
 
-            const headers = {
-                Accept: "application/json, text/javascript, */*; q=0.1",
-                "User-Agent":
-                    "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/128",
-                Referer: `https://m.soundcloud.com/search?q=${encodeURIComponent(query)}`
-            };
+        } catch (e) {
+            return { status: false, msg: e.message };
+        }
+    }
 
-            const { data } = await axios.get(baseUrl, {
-                params,
-                headers,
-                timeout: 30000
-            });
+    // 🔎 البحث في Spotify
+    async function searchSpotify(query, limit = 20) {
+        try {
+            const creds = await spotifyCreds();
+            if (!creds.status) return [];
 
-            const result = data?.collection || [];
+            const { data } = await axios.get(
+                "https://api.spotify.com/v1/search",
+                {
+                    headers: {
+                        Authorization: `Bearer ${creds.access_token}`
+                    },
+                    params: {
+                        q: query,
+                        type: "track",
+                        limit: Math.min(limit, 50),
+                        market: "US"
+                    },
+                    timeout: 30000
+                }
+            );
 
-            return result.map(item => ({
-                genre: item.genre,
-                created_at: item.created_at,
-                duration: item.duration,
-                permalink: cleanFilename(item.permalink),
-                comment_count: item.comment_count,
-                artwork_url: item.artwork_url,
-                permalink_url: item.permalink_url,
-                playback_count: item.playback_count
+            const tracks = data?.tracks?.items || [];
+
+            return tracks.map(item => ({
+                track_url: item.external_urls.spotify,
+                thumbnail: item.album.images?.[0]?.url || null,
+                title: `${item.artists?.[0]?.name} - ${item.name}`,
+                artist: item.artists?.[0]?.name,
+                duration: convert(item.duration_ms),
+                preview_url: item.preview_url || null,
+                album: item.album.name,
+                release_date: item.album.release_date
             }));
 
         } catch (e) {
-            console.error("SoundCloud Error:", e.message);
+            console.error("Spotify Error:", e.message);
             return [];
         }
     }
 
-    // 🧹 تنظيف الاسم
-    function cleanFilename(filename = "") {
-        return filename
-            .replace(/[<>:"/\\|?*]/g, "_")
-            .replace(/-/g, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-    }
-
     // 🔥 REST API
-    app.all("/api/s/soundcloud", async (req, res) => {
+    app.all("/api/s/spotify", async (req, res) => {
 
         const query = req.query.query || req.body.query;
 
@@ -74,7 +99,7 @@ module.exports = function (app) {
         }
 
         try {
-            const result = await searchSoundCloud(query.trim());
+            const result = await searchSpotify(query.trim(), 20);
 
             if (!result.length) {
                 return res.status(404).json({
