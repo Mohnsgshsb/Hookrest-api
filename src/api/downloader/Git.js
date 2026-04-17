@@ -1,115 +1,79 @@
 const axios = require("axios");
 const yts = require("yt-search");
 
-module.exports = function (app) {
+module.exports = async (req, res) => {
 
-    const ytdown = {
-        api: {
-            download: "https://hub.ytconvert.org/api/download"
-        },
+    const { name } = req.query;
 
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 15)',
-            'Accept': 'application/json',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Content-Type': 'application/json',
-            'origin': 'https://media.ytmp3.gg',
-            'x-requested-with': 'mark.via.gp',
-            'referer': 'https://media.ytmp3.gg/'
-        },
+    if (!name) {
+        return res.status(400).json({
+            status: false,
+            message: "اكتب اسم الأغنية"
+        });
+    }
 
-        sleep: (ms) => new Promise(r => setTimeout(r, ms)),
+    try {
 
-        request: async (url) => {
-            const res = await axios.post(
-                ytdown.api.download,
-                {
-                    url,
-                    os: "android",
-                    output: { type: "audio", format: "mp3" },
-                    audio: { bitrate: "128k" }
-                },
-                { headers: ytdown.headers }
-            );
+        // 🔍 بحث
+        const search = await yts(name);
 
-            let data = res.data;
+        if (!search.videos.length) {
+            return res.status(404).json({
+                status: false,
+                message: "مفيش نتائج"
+            });
+        }
 
-            if (data.statusUrl) {
-                for (let i = 0; i < 20; i++) {
-                    const check = await axios.get(data.statusUrl, {
-                        headers: ytdown.headers
-                    });
+        const video = search.videos[0]; // أول نتيجة
 
-                    data = check.data;
+        // 🎵 معلومات فقط
+        const info = {
+            status: true,
+            title: video.title,
+            author: video.author.name,
+            duration: video.timestamp,
+            views: video.views,
+            uploaded: video.ago,
+            thumbnail: video.thumbnail,
+            url: video.url
+        };
 
-                    if (data.downloadUrl || data.url) break;
+        // لو مش عايز تحميل، نرجّع المعلومات بس
+        if (req.query.download !== "true") {
+            return res.json(info);
+        }
 
-                    await ytdown.sleep(2000);
+        // ⬇️ لو عايز تحميل كمان
+        const ytdown = await axios.post(
+            "https://hub.ytconvert.org/api/download",
+            {
+                url: video.url,
+                os: "android",
+                output: { type: "audio", format: "mp3" },
+                audio: { bitrate: "128k" }
+            },
+            {
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 15)",
+                    "Content-Type": "application/json",
+                    "origin": "https://media.ytmp3.gg",
+                    "x-requested-with": "mark.via.gp",
+                    "referer": "https://media.ytmp3.gg/"
                 }
             }
+        );
 
-            return data;
-        }
-    };
+        const downloadUrl = ytdown.data.downloadUrl || ytdown.data.url;
 
-    // 🔥 SEARCH + AUTO DOWNLOAD (FIRST RESULT ONLY)
-    app.get("/api/ytmp3/search", async (req, res) => {
+        return res.json({
+            ...info,
+            download: downloadUrl || null
+        });
 
-        const { name } = req.query;
-
-        if (!name) {
-            return res.status(400).json({
-                status: false,
-                message: "اكتب اسم الأغنية"
-            });
-        }
-
-        try {
-
-            // 1️⃣ بحث
-            const search = await yts(name);
-
-            if (!search.videos.length) {
-                return res.status(404).json({
-                    status: false,
-                    message: "مفيش نتائج"
-                });
-            }
-
-            // 2️⃣ أول نتيجة بس
-            const video = search.videos[0];
-
-            // 3️⃣ تحميل مباشر
-            const result = await ytdown.request(video.url);
-
-            // 4️⃣ رجع لينك التحميل فقط
-            const download = result.downloadUrl || result.url;
-
-            if (!download) {
-                return res.status(500).json({
-                    status: false,
-                    message: "فشل التحميل"
-                });
-            }
-
-            const audio = await axios.get(download, {
-                responseType: "stream"
-            });
-
-            res.setHeader("Content-Type", "audio/mpeg");
-            res.setHeader(
-                "Content-Disposition",
-                `attachment; filename="song.mp3"`
-            );
-
-            audio.data.pipe(res);
-
-        } catch (err) {
-            res.status(500).json({
-                status: false,
-                error: err.message
-            });
-        }
-    });
-
+    } catch (err) {
+        res.status(500).json({
+            status: false,
+            error: err.message
+        });
+    }
 };
