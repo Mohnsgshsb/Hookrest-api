@@ -2,7 +2,7 @@ const axios = require('axios');
 
 module.exports = function (app) {
 
-    app.get('/a/soundcloud', async (req, res) => {
+    app.get('/api/spotify', async (req, res) => {
         const { url } = req.query;
 
         if (!url) {
@@ -14,26 +14,20 @@ module.exports = function (app) {
 
         try {
             const response = await axios.post(
-                'https://snapfrom.com/wp-json/aio-dl/video-data/',
+                'https://spotify.downloaderize.com/wp-admin/admin-ajax.php',
                 new URLSearchParams({
+                    action: 'spotify_downloader_get_info',
                     url: url,
-                    token: '1f91c03707528fc9d3e507fadcf4c5bdd75e9ed776306422bb64fa76559ed3c8'
+                    nonce: 'd329e2e788'
                 }),
                 {
                     headers: {
-                        'authority': 'snapfrom.com',
-                        'accept': '*/*',
-                        'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-                        'content-type': 'application/x-www-form-urlencoded',
-                        'origin': 'https://snapfrom.com',
-                        'referer': 'https://snapfrom.com/soundcloud-music-downloader/',
-                        'sec-ch-ua': '"Chromium";v="139", "Not;A=Brand";v="99"',
-                        'sec-ch-ua-mobile': '?1',
-                        'sec-ch-ua-platform': '"Android"',
-                        'sec-fetch-dest': 'empty',
-                        'sec-fetch-mode': 'cors',
-                        'sec-fetch-site': 'same-origin',
-                        'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36'
+                        "accept": "application/json, text/javascript, */*; q=0.01",
+                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "origin": "https://spotify.downloaderize.com",
+                        "referer": "https://spotify.downloaderize.com/",
+                        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
+                        "x-requested-with": "XMLHttpRequest"
                     }
                 }
             );
@@ -47,7 +41,7 @@ module.exports = function (app) {
             if (err.response) {
                 return res.status(err.response.status).json({
                     status: false,
-                    error: 'API request failed',
+                    error: 'Spotify API error',
                     message: err.response.data
                 });
             }
