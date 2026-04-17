@@ -1,59 +1,57 @@
 const axios = require('axios');
-const FormData = require('form-data');
 
 module.exports = function (app) {
 
-    app.get('/tools/upscale', async (req, res) => {
-        try {
-            const { url } = req.query;
+    app.get('/a/soundcloud', async (req, res) => {
+        const { url } = req.query;
 
-            if (!url) {
-                return res.status(400).json({
-                    status: false,
-                    error: "حط رابط الصورة"
-                });
-            }
-
-            // تحميل الصورة
-            const img = await axios.get(url, {
-                responseType: 'arraybuffer'
+        if (!url) {
+            return res.status(400).json({
+                status: false,
+                error: 'Parameter "url" مطلوب.'
             });
+        }
 
-            const form = new FormData();
-            form.append('image', Buffer.from(img.data), 'image.jpg');
-            form.append('scale', '2');
-
-            // رفع للصيرفر
+        try {
             const response = await axios.post(
-                'https://api2.pixelcut.app/image/upscale/v1',
-                form,
+                'https://snapfrom.com/wp-json/aio-dl/video-data/',
+                new URLSearchParams({
+                    url: url,
+                    token: '1f91c03707528fc9d3e507fadcf4c5bdd75e9ed776306422bb64fa76559ed3c8'
+                }),
                 {
                     headers: {
-                        ...form.getHeaders(),
-                        'accept': 'application/json',
-                        'x-client-version': 'web'
+                        'authority': 'snapfrom.com',
+                        'accept': '*/*',
+                        'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+                        'content-type': 'application/x-www-form-urlencoded',
+                        'origin': 'https://snapfrom.com',
+                        'referer': 'https://snapfrom.com/soundcloud-music-downloader/',
+                        'sec-ch-ua': '"Chromium";v="139", "Not;A=Brand";v="99"',
+                        'sec-ch-ua-mobile': '?1',
+                        'sec-ch-ua-platform': '"Android"',
+                        'sec-fetch-dest': 'empty',
+                        'sec-fetch-mode': 'cors',
+                        'sec-fetch-site': 'same-origin',
+                        'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36'
                     }
                 }
             );
 
-            const resultUrl = response.data?.result_url;
+            res.json({
+                status: true,
+                result: response.data
+            });
 
-            if (!resultUrl) {
-                return res.status(500).json({
+        } catch (err) {
+            if (err.response) {
+                return res.status(err.response.status).json({
                     status: false,
-                    error: "No result URL"
+                    error: 'API request failed',
+                    message: err.response.data
                 });
             }
 
-            // تحميل الصورة بعد التكبير
-            const finalImg = await axios.get(resultUrl, {
-                responseType: 'arraybuffer'
-            });
-
-            res.setHeader('Content-Type', 'image/jpeg');
-            res.send(finalImg.data);
-
-        } catch (err) {
             res.status(500).json({
                 status: false,
                 error: err.message
