@@ -2,8 +2,31 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
+    // 🍪 جلب كوكيز جديدة كل مرة
+    async function getFreshCookies() {
+        try {
+            const res = await axios.get("https://spotmate.online/en1", {
+                headers: {
+                    "User-Agent":
+                        "Mozilla/5.0 (Linux; Android 15; Mobile) AppleWebKit/537.36 Chrome/146",
+                },
+                timeout: 15000
+            });
+
+            const cookies = res.headers["set-cookie"];
+            if (!cookies) return "";
+
+            return cookies.map(c => c.split(";")[0]).join("; ");
+        } catch (e) {
+            return "";
+        }
+    }
+
+    // 🔥 التحميل
     async function downloadSpotify(url) {
         try {
+            const cookie = await getFreshCookies();
+
             const { data } = await axios.post(
                 "https://spotmate.online/convert",
                 {
@@ -11,23 +34,15 @@ module.exports = function (app) {
                 },
                 {
                     headers: {
-                        'User-Agent': 'Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.7680.177 Mobile Safari/537.36',
-                        'Accept-Encoding': 'gzip, deflate, br, zstd',
-                        'Content-Type': 'application/json',
-                        'sec-ch-ua-platform': '"Android"',
-                        'sec-ch-ua': '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
-                        'sec-ch-ua-mobile': '?1',
-                        'origin': 'https://spotmate.online',
-                        'x-requested-with': 'mark.via.gp',
-                        'sec-fetch-site': 'same-origin',
-                        'sec-fetch-mode': 'cors',
-                        'sec-fetch-dest': 'empty',
-                        'referer': 'https://spotmate.online/en1',
-                        'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
-                        'priority': 'u=1, i',
+                        "User-Agent":
+                            "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/146",
+                        "Content-Type": "application/json",
+                        "origin": "https://spotmate.online",
+                        "referer": "https://spotmate.online/en1",
+                        "x-requested-with": "mark.via.gp",
 
-                        // 🍪 Cookies (مهم جداً)
-                        'Cookie': 'XSRF-TOKEN=eyJpdiI6IkJHNERBOElLWWJPcUFhM2w0T2pHRGc9PSIsInZhbHVlIjoiY2FqWG56UW1aUzRuS2lMZHE5NGJuZHMyckNsbDFuYldCM3BCZ0VmK3V5YjVYY1RFTXVMNktWOHM1THhSQUhHMWNFMlpOTVNmdHdBOGZGSTJiQzZ4dHVJV0dVTFc3ZjQ1NFdIYlJDVklLRnVMaEk4QTV4anpBSXRKbW9QQjltcU8iLCJtYWMiOiI2YWMzZDM3ZjFkMTUyNzRkNGVmYTFkOGM1N2NmY2JhMmYwNWNjZjFkYmE2ODAxNWY3YTE2OTM5OWUxN2M5YjFjIiwidGFnIjoiIn0%3D; spotmateonline_session=eyJpdiI6Iml6NmhaTE16L3VaTS9qYkRuemowcmc9PSIsInZhbHVlIjoiWGlVamJYbGtreEVURlJ6b3RrYnFjaDhoeVROVStZdDJNWlRLa3JpZWYzTS9PRU9GUDJBL29xYmlSSDA4ejNqRE13NGRkc2ZVREU1WHRUY0tQSmd5MmdLVzRBMlJKRXVDUklUN2wvSFRUa1hzcVFDOFVWQ1Q3S1pyTnFDS3ptRUQiLCJtYWMiOiIwNzU2ZjExZTg2NjNlOGM4ZGE5YzdlOTgxNDdhZWQ5MjJmMjIxNmVkMGMzY2E4ZTYwZDhiMGI3ZGMxOTc2NTcyIiwidGFnIjoiIn0%3D'
+                        // 🍪 dynamic cookie
+                        "Cookie": cookie
                     },
                     timeout: 30000
                 }
@@ -36,7 +51,7 @@ module.exports = function (app) {
             return data;
 
         } catch (e) {
-            console.error("Spotify Download Error:", e.message);
+            console.error("Download error:", e.message);
             return null;
         }
     }
@@ -47,43 +62,31 @@ module.exports = function (app) {
         const url = req.query.url || req.body.url;
 
         if (!url) {
-            return res.status(400).json({
+            return res.json({
                 status: false,
-                message: "📌 حط رابط Spotify"
-            });
-        }
-
-        if (!url.includes("open.spotify.com/track")) {
-            return res.status(400).json({
-                status: false,
-                message: "❌ لازم Track URL صحيح"
+                message: "send url"
             });
         }
 
         try {
             const result = await downloadSpotify(url);
 
-            if (!result) {
-                return res.status(500).json({
+            if (!result || !result.url) {
+                return res.json({
                     status: false,
-                    message: "❌ فشل التحميل"
+                    message: "❌ فشل التحميل (Blocked or invalid session)"
                 });
             }
 
-            // 🔥 نرجّع اللينك المباشر لو موجود
             return res.json({
                 status: true,
-                error: false,
-                url,
-                download: result.url || null,
-                raw: result,
-                message: "✅ تم جلب رابط التحميل المباشر"
+                download: result.url,
+                raw: result
             });
 
         } catch (err) {
             return res.status(500).json({
                 status: false,
-                message: "⚠️ Server Error",
                 error: err.message
             });
         }
