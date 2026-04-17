@@ -1,9 +1,122 @@
 const axios = require('axios');
 
+class PinterestScraper {
+    constructor() {
+        this.baseUrl = "https://id.pinterest.com/resource/BaseSearchResource/get/";
+        this.headers = {
+            "accept": "application/json",
+            "content-type": "application/x-www-form-urlencoded",
+            "user-agent": "Mozilla/5.0",
+            "x-requested-with": "XMLHttpRequest"
+        };
+    }
+
+    async makeRequest(params) {
+        try {
+            const url = this.baseUrl + "?" + new URLSearchParams(params);
+
+            const { data } = await axios.get(url, {
+                headers: this.headers
+            });
+
+            return data;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    format(results) {
+        return results.map(item => {
+            let video = null;
+
+            if (item.videos?.video_list) {
+                const key = Object.keys(item.videos.video_list)[0];
+                video = item.videos.video_list[key]?.url;
+            }
+
+            return {
+                id: item.id,
+                pin: `https://www.pinterest.com/pin/${item.id}`,
+                title: item.grid_title || "",
+                description: item.description || "",
+                image: item.images?.orig?.url || null,
+                video,
+                type: item.videos ? "video" : "image",
+                user: item.pinner?.username || null
+            };
+        });
+    }
+
+    async scrape(query, type = null) {
+        const params = {
+            source_url: `/search/pins/?q=${encodeURIComponent(query)}&rs=typed`,
+            data: JSON.stringify({
+                options: {
+                    query,
+                    scope: "pins",
+                    rs: "typed"
+                },
+                context: {}
+            }),
+            _: Date.now()
+        };
+
+        const res = await this.makeRequest(params);
+        if (!res) return [];
+
+        let results = this.format(res.resource_response?.data?.results || []);
+
+        if (type) {
+            results = results.filter(v => v.type === type);
+        }
+
+        return results.slice(0, 15); // 🔥 اول 15 بس
+    }
+}
+
+const scraper = new PinterestScraper();
+
 module.exports = function (app) {
 
+    // ✅ GET
     app.get('/pinterest', async (req, res) => {
-        const { query } = req.query;
+        const { query, type } = req.query;
+
+        if (!query) {
+            return res.status(400).json({
+                status: false,
+                error: "حط كلمة البحث"
+            });
+        }
+
+        if (type && !["image", "video", "gif"].includes(type)) {
+            return res.status(400).json({
+                status: false,
+                error: "type لازم image او video او gif"
+            });
+        }
+
+        try {
+            const result = await scraper.scrape(query, type);
+
+            res.json({
+                status: true,
+                creator: "TERBO-SPAM",
+                total: result.length,
+                result
+            });
+
+        } catch (err) {
+            res.status(500).json({
+                status: false,
+                error: err.message
+            });
+        }
+    });
+
+    // ✅ POST
+    app.post('/pinterest', async (req, res) => {
+        const { query, type } = req.body;
 
         if (!query) {
             return res.status(400).json({
@@ -13,41 +126,13 @@ module.exports = function (app) {
         }
 
         try {
-            const { data } = await axios.get(
-                `https://www.pinterest.com/search/pins/?rs=typed&q=${encodeURIComponent(query)}`,
-                {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0',
-                        'Accept-Language': 'en-US,en;q=0.9'
-                    }
-                }
-            );
-
-            // 🔥 نطلع الصور (HD)
-            let images = [...data.matchAll(/"url":"(https:\/\/i\.pinimg\.com\/[^"]+)"/g)]
-                .map(v => v[1]
-                    .replace(/\\u002F/g, '/')
-                    .replace(/236x|474x|564x/g, 'original') // نخليها اعلى جودة
-                );
-
-            // ❌ نشيل الصور الصغيرة / الايقونات
-            images = images.filter(v => v.includes('pinimg.com') && v.endsWith('.jpg'));
-
-            // ✅ نشيل التكرار + نجيب اول 15
-            const unique = [...new Set(images)].slice(0, 15);
-
-            if (!unique.length) {
-                return res.status(404).json({
-                    status: false,
-                    error: "مفيش نتائج"
-                });
-            }
+            const result = await scraper.scrape(query, type);
 
             res.json({
                 status: true,
                 creator: "TERBO-SPAM",
-                total: unique.length,
-                result: unique
+                total: result.length,
+                result
             });
 
         } catch (err) {
