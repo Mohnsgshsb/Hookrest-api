@@ -1,51 +1,118 @@
 const axios = require('axios');
+const cheerio = require('cheerio');
+
+async function scrapeMusicApple(query, region = 'us') {
+    try {
+        const { data } = await axios.get(
+            `https://music.apple.com/${region}/search?term=${encodeURIComponent(query)}`,
+            {
+                timeout: 30000,
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                }
+            }
+        );
+
+        const $ = cheerio.load(data);
+        let results = [];
+
+        $('.top-search-lockup').each((i, el) => {
+            const title = $(el).find('.top-search-lockup__primary__title').text().trim();
+            const artist = $(el).find('.top-search-lockup__secondary').text().trim();
+            const link = $(el).find('.click-action').attr('href');
+            const image = $(el).find('picture source').attr('srcset')?.split(' ')[0];
+
+            if (title && artist && link) {
+                results.push({
+                    title,
+                    artist,
+                    link: link.startsWith('http') ? link : `https://music.apple.com${link}`,
+                    image: image || null
+                });
+            }
+        });
+
+        return results;
+
+    } catch (e) {
+        throw new Error('Failed to scrape Apple Music');
+    }
+}
 
 module.exports = function (app) {
 
-    app.get('/api/spotify', async (req, res) => {
-        const { url } = req.query;
+    // ✅ GET
+    app.get('/search/applemusic', async (req, res) => {
+        const { query, region = 'us' } = req.query;
 
-        if (!url) {
+        if (!query) {
             return res.status(400).json({
                 status: false,
-                error: 'Parameter "url" مطلوب.'
+                error: 'Parameter "query" مطلوب'
+            });
+        }
+
+        if (typeof query !== 'string' || !query.trim()) {
+            return res.status(400).json({
+                status: false,
+                error: 'Query لازم يكون نص'
+            });
+        }
+
+        if (query.length > 255) {
+            return res.status(400).json({
+                status: false,
+                error: 'Query كبير زيادة'
+            });
+        }
+
+        if (region && !/^[a-z]{2}$/.test(region)) {
+            return res.status(400).json({
+                status: false,
+                error: 'Region غلط'
             });
         }
 
         try {
-            const response = await axios.post(
-                'https://spotify.downloaderize.com/wp-admin/admin-ajax.php',
-                new URLSearchParams({
-                    action: 'spotify_downloader_get_info',
-                    url: url,
-                    nonce: 'd329e2e788'
-                }),
-                {
-                    headers: {
-                        "accept": "application/json, text/javascript, */*; q=0.01",
-                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-                        "origin": "https://spotify.downloaderize.com",
-                        "referer": "https://spotify.downloaderize.com/",
-                        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
-                        "x-requested-with": "XMLHttpRequest"
-                    }
-                }
-            );
+            const result = await scrapeMusicApple(query.trim(), region.trim());
 
             res.json({
                 status: true,
-                result: response.data
+                total: result.length,
+                result,
+                timestamp: new Date().toISOString()
             });
 
         } catch (err) {
-            if (err.response) {
-                return res.status(err.response.status).json({
-                    status: false,
-                    error: 'Spotify API error',
-                    message: err.response.data
-                });
-            }
+            res.status(500).json({
+                status: false,
+                error: err.message
+            });
+        }
+    });
 
+    // ✅ POST
+    app.post('/search/applemusic', async (req, res) => {
+        const { query, region = 'us' } = req.body;
+
+        if (!query) {
+            return res.status(400).json({
+                status: false,
+                error: 'Parameter "query" مطلوب'
+            });
+        }
+
+        try {
+            const result = await scrapeMusicApple(query.trim(), region.trim());
+
+            res.json({
+                status: true,
+                total: result.length,
+                result,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (err) {
             res.status(500).json({
                 status: false,
                 error: err.message
