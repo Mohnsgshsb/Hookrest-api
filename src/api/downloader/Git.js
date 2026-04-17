@@ -2,8 +2,7 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-    const BASE = "https://studio-api-prod.suno.com";
-    const TOKEN = process.env.SUNO_TOKEN;
+    const BASE = "https://studio-api-prod.suno.com",
 
     const headers = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 15)",
