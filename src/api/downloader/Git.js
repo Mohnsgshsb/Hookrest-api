@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-    const BASE = "https://studio-api-prod.suno.com",
+    const BASE = "https://studio-api-prod.suno.com";
 
     const headers = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 15)",
@@ -12,8 +12,9 @@ module.exports = function (app) {
         "content-type": "application/json"
     };
 
-    // ⏳ وظيفة انتظار لحد ما التراك يجهز
+    // ⏳ انتظار لحد ما الأغنية تجهز
     async function waitForSong(clipId, maxTry = 30) {
+
         for (let i = 0; i < maxTry; i++) {
 
             const { data } = await axios.get(
@@ -27,7 +28,7 @@ module.exports = function (app) {
                 return song;
             }
 
-            await new Promise(r => setTimeout(r, 5000)); // كل 5 ثواني
+            await new Promise(r => setTimeout(r, 5000));
         }
 
         throw new Error("Timeout: song not ready");
@@ -63,7 +64,7 @@ module.exports = function (app) {
                 { headers }
             );
 
-            const clipId = gen.data.clips?.[0]?.id;
+            const clipId = gen.data?.clips?.[0]?.id;
 
             if (!clipId) {
                 return res.status(500).json({
@@ -74,6 +75,13 @@ module.exports = function (app) {
 
             // 2️⃣ انتظار لحد ما تجهز
             const song = await waitForSong(clipId);
+
+            if (!song?.audio_url) {
+                return res.status(500).json({
+                    status: false,
+                    message: "audio not found"
+                });
+            }
 
             // 3️⃣ تحميل مباشر
             const audio = await axios.get(song.audio_url, {
