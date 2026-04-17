@@ -2,63 +2,94 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-    const BASE = "https://gamepvz.com";
+    const BASE = "https://studio-api-prod.suno.com";
 
-    // 🔥 جلب بيانات + رابط التحميل
-    async function getDownloadUrl(trackUrl) {
-        const { data } = await axios.post(
-            `${BASE}/api/download/get-url`,
-            { url: trackUrl },
+    const HEADERS = {
+        "User-Agent": "Mozilla/5.0",
+        "authorization": "Bearer YOUR_TOKEN_HERE",
+        "content-type": "application/json"
+    };
+
+    // ⏳ delay
+    const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
+    // 🎵 generate + polling
+    async function generateSong(prompt) {
+
+        // 1️⃣ generate
+        const gen = await axios.post(
+            `${BASE}/api/generate/v2-web/`,
             {
-                headers: {
-                    "User-Agent":
-                        "Mozilla/5.0 (Linux; Android 15) Chrome/146",
-                    "origin": BASE,
-                    "x-requested-with": "mark.via.gp"
-                }
-            }
+                generation_type: "TEXT",
+                mv: "chirp-auk-turbo",
+                prompt: "",
+                gpt_description_prompt: prompt,
+                make_instrumental: false
+            },
+            { headers: HEADERS }
         );
 
-        return data;
+        const clipIds = gen.data.clips.map(c => c.id);
+
+        // 2️⃣ polling
+        for (let i = 0; i < 25; i++) {
+            await delay(4000);
+
+            const feed = await axios.post(
+                `${BASE}/api/feed/v3`,
+                {
+                    filters: {
+                        ids: {
+                            presence: "True",
+                            clipIds: clipIds
+                        }
+                    },
+                    limit: clipIds.length
+                },
+                { headers: HEADERS }
+            );
+
+            const done = feed.data.clips.find(c => c.status === "complete");
+
+            if (done) return done;
+        }
+
+        return null;
     }
 
-    // 🚀 REST API (DIRECT STREAM DOWNLOAD)
-    app.all("/api/s/spotify/download", async (req, res) => {
+    // 🚀 REST API (DIRECT STREAM)
+    app.all("/api/suno/generate", async (req, res) => {
 
-        const url = req.query.url || req.body.url;
+        const prompt = req.query.prompt || req.body.prompt;
 
-        if (!url) {
+        if (!prompt) {
             return res.status(400).json({
                 status: false,
-                message: "spotify url required"
+                message: "prompt required"
             });
         }
 
         try {
-            const data = await getDownloadUrl(url);
+            const song = await generateSong(prompt);
 
-            if (!data?.originalVideoUrl) {
+            if (!song || !song.audio_url) {
                 return res.status(500).json({
                     status: false,
-                    message: "failed to get download link"
+                    message: "failed to generate song"
                 });
             }
 
-            const downloadUrl = `${BASE}${data.originalVideoUrl}`;
-
-            // 🔥 بدل ما نرجّع JSON → هنحوّلها Download مباشر
-            const audio = await axios.get(downloadUrl, {
+            // 🎧 تحميل مباشر
+            const audio = await axios.get(song.audio_url, {
                 responseType: "stream"
             });
 
-            // headers عشان يعتبره ملف تحميل
             res.setHeader("Content-Type", "audio/mpeg");
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename="${data.title || "spotify"}.mp3"`
+                `attachment; filename="${song.title || "suno"}.mp3"`
             );
 
-            // 🔥 pipe مباشر للملف
             audio.data.pipe(res);
 
         } catch (e) {
