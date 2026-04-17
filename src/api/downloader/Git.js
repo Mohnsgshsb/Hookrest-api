@@ -3,19 +3,19 @@ const FormData = require('form-data');
 
 module.exports = function (app) {
 
-    app.post('/tools/upscale', async (req, res) => {
+    app.get('/tools/upscale', async (req, res) => {
         try {
-            const imageUrl = req.body.url;
+            const { url } = req.query;
 
-            if (!imageUrl) {
+            if (!url) {
                 return res.status(400).json({
                     status: false,
                     error: "حط رابط الصورة"
                 });
             }
 
-            // تحميل الصورة من الرابط
-            const img = await axios.get(imageUrl, {
+            // تحميل الصورة
+            const img = await axios.get(url, {
                 responseType: 'arraybuffer'
             });
 
