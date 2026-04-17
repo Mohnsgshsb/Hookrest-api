@@ -2,13 +2,15 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-    // 🍪 جلب كوكيز جديدة كل مرة
-    async function getFreshCookies() {
+    const BASE = "https://spotmate.online";
+
+    // 🍪 جلب كوكيز جديدة
+    async function getCookies() {
         try {
-            const res = await axios.get("https://spotmate.online/en1", {
+            const res = await axios.get(`${BASE}/en1`, {
                 headers: {
                     "User-Agent":
-                        "Mozilla/5.0 (Linux; Android 15; Mobile) AppleWebKit/537.36 Chrome/146",
+                        "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/146"
                 },
                 timeout: 15000
             });
@@ -17,77 +19,93 @@ module.exports = function (app) {
             if (!cookies) return "";
 
             return cookies.map(c => c.split(";")[0]).join("; ");
-        } catch (e) {
+        } catch {
             return "";
         }
     }
 
-    // 🔥 التحميل
-    async function downloadSpotify(url) {
-        try {
-            const cookie = await getFreshCookies();
-
-            const { data } = await axios.post(
-                "https://spotmate.online/convert",
-                {
-                    urls: url
+    // 🎧 جلب معلومات التراك
+    async function getTrackData(url, cookie) {
+        const { data } = await axios.post(
+            `${BASE}/getTrackData`,
+            { spotify_url: url },
+            {
+                headers: {
+                    "User-Agent":
+                        "Mozilla/5.0 (Linux; Android 15) Chrome/146",
+                    "Content-Type": "application/json",
+                    "origin": BASE,
+                    "referer": `${BASE}/en1`,
+                    "x-requested-with": "mark.via.gp",
+                    "Cookie": cookie
                 },
-                {
-                    headers: {
-                        "User-Agent":
-                            "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/146",
-                        "Content-Type": "application/json",
-                        "origin": "https://spotmate.online",
-                        "referer": "https://spotmate.online/en1",
-                        "x-requested-with": "mark.via.gp",
+                timeout: 30000
+            }
+        );
 
-                        // 🍪 dynamic cookie
-                        "Cookie": cookie
-                    },
-                    timeout: 30000
-                }
-            );
-
-            return data;
-
-        } catch (e) {
-            console.error("Download error:", e.message);
-            return null;
-        }
+        return data;
     }
 
-    // 🔥 REST API
-    app.all("/api/s/spotify/download", async (req, res) => {
+    // 🔥 تحويل لتحميل mp3
+    async function convertTrack(url, cookie) {
+        const { data } = await axios.post(
+            `${BASE}/convert`,
+            { urls: url },
+            {
+                headers: {
+                    "User-Agent":
+                        "Mozilla/5.0 (Linux; Android 15) Chrome/146",
+                    "Content-Type": "application/json",
+                    "origin": BASE,
+                    "referer": `${BASE}/en1`,
+                    "x-requested-with": "mark.via.gp",
+                    "Cookie": cookie
+                },
+                timeout: 30000
+            }
+        );
+
+        return data;
+    }
+
+    // 🚀 API
+    app.all("/api/s/spotify/full", async (req, res) => {
 
         const url = req.query.url || req.body.url;
 
         if (!url) {
             return res.json({
                 status: false,
-                message: "send url"
+                message: "send spotify url"
+            });
+        }
+
+        if (!url.includes("open.spotify.com/track")) {
+            return res.json({
+                status: false,
+                message: "invalid spotify track url"
             });
         }
 
         try {
-            const result = await downloadSpotify(url);
+            const cookie = await getCookies();
 
-            if (!result || !result.url) {
-                return res.json({
-                    status: false,
-                    message: "❌ فشل التحميل (Blocked or invalid session)"
-                });
-            }
+            // 1️⃣ track info
+            const info = await getTrackData(url, cookie);
+
+            // 2️⃣ download link
+            const download = await convertTrack(url, cookie);
 
             return res.json({
                 status: true,
-                download: result.url,
-                raw: result
+                info,
+                download_url: download?.url || null
             });
 
-        } catch (err) {
+        } catch (e) {
             return res.status(500).json({
                 status: false,
-                error: err.message
+                error: e.message
             });
         }
     });
