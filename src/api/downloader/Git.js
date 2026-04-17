@@ -1,143 +1,100 @@
-const axios = require('axios');
-
-class PinterestScraper {
-    constructor() {
-        this.baseUrl = "https://id.pinterest.com/resource/BaseSearchResource/get/";
-        this.headers = {
-            "accept": "application/json",
-            "content-type": "application/x-www-form-urlencoded",
-            "user-agent": "Mozilla/5.0",
-            "x-requested-with": "XMLHttpRequest"
-        };
-    }
-
-    async makeRequest(params) {
-        try {
-            const url = this.baseUrl + "?" + new URLSearchParams(params);
-
-            const { data } = await axios.get(url, {
-                headers: this.headers
-            });
-
-            return data;
-        } catch (e) {
-            return null;
-        }
-    }
-
-    format(results) {
-        return results.map(item => {
-            let video = null;
-
-            if (item.videos?.video_list) {
-                const key = Object.keys(item.videos.video_list)[0];
-                video = item.videos.video_list[key]?.url;
-            }
-
-            return {
-                id: item.id,
-                pin: `https://www.pinterest.com/pin/${item.id}`,
-                title: item.grid_title || "",
-                description: item.description || "",
-                image: item.images?.orig?.url || null,
-                video,
-                type: item.videos ? "video" : "image",
-                user: item.pinner?.username || null
-            };
-        });
-    }
-
-    async scrape(query, type = null) {
-        const params = {
-            source_url: `/search/pins/?q=${encodeURIComponent(query)}&rs=typed`,
-            data: JSON.stringify({
-                options: {
-                    query,
-                    scope: "pins",
-                    rs: "typed"
-                },
-                context: {}
-            }),
-            _: Date.now()
-        };
-
-        const res = await this.makeRequest(params);
-        if (!res) return [];
-
-        let results = this.format(res.resource_response?.data?.results || []);
-
-        if (type) {
-            results = results.filter(v => v.type === type);
-        }
-
-        return results.slice(0, 15); // 🔥 اول 15 بس
-    }
-}
-
-const scraper = new PinterestScraper();
+const axios = require("axios");
 
 module.exports = function (app) {
 
-    // ✅ GET
-    app.get('/pinterest', async (req, res) => {
-        const { query, type } = req.query;
+    // 🔎 البحث في SoundCloud
+    async function searchSoundCloud(query) {
+        try {
+            const baseUrl = "https://api-mobi.soundcloud.com/search";
+
+            const params = {
+                q: query,
+                client_id: "KKzJxmw11tYpCs6T24P4uUYhqmjalG6M",
+                stage: ""
+            };
+
+            const headers = {
+                Accept: "application/json, text/javascript, */*; q=0.1",
+                "User-Agent":
+                    "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/128",
+                Referer: `https://m.soundcloud.com/search?q=${encodeURIComponent(query)}`
+            };
+
+            const { data } = await axios.get(baseUrl, {
+                params,
+                headers,
+                timeout: 30000
+            });
+
+            const result = data?.collection || [];
+
+            return result.map(item => ({
+                genre: item.genre,
+                created_at: item.created_at,
+                duration: item.duration,
+                permalink: cleanFilename(item.permalink),
+                comment_count: item.comment_count,
+                artwork_url: item.artwork_url,
+                permalink_url: item.permalink_url,
+                playback_count: item.playback_count
+            }));
+
+        } catch (e) {
+            console.error("SoundCloud Error:", e.message);
+            return [];
+        }
+    }
+
+    // 🧹 تنظيف الاسم
+    function cleanFilename(filename = "") {
+        return filename
+            .replace(/[<>:"/\\|?*]/g, "_")
+            .replace(/-/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    // 🔥 REST API
+    app.all("/api/s/soundcloud", async (req, res) => {
+
+        const query = req.query.query || req.body.query;
 
         if (!query) {
             return res.status(400).json({
                 status: false,
-                error: "حط كلمة البحث"
+                message: "📌 حط كلمة البحث"
             });
         }
 
-        if (type && !["image", "video", "gif"].includes(type)) {
+        if (typeof query !== "string" || !query.trim()) {
             return res.status(400).json({
                 status: false,
-                error: "type لازم image او video او gif"
+                message: "❌ query لازم يكون نص"
             });
         }
 
         try {
-            const result = await scraper.scrape(query, type);
+            const result = await searchSoundCloud(query.trim());
 
-            res.json({
+            if (!result.length) {
+                return res.status(404).json({
+                    status: false,
+                    message: `❌ مفيش نتائج لـ: ${query}`
+                });
+            }
+
+            return res.json({
                 status: true,
-                creator: "TERBO-SPAM",
+                query,
                 total: result.length,
-                result
+                data: result,
+                message: "✅ تم جلب النتائج"
             });
 
         } catch (err) {
-            res.status(500).json({
+            return res.status(500).json({
                 status: false,
-                error: err.message
-            });
-        }
-    });
-
-    // ✅ POST
-    app.post('/pinterest', async (req, res) => {
-        const { query, type } = req.body;
-
-        if (!query) {
-            return res.status(400).json({
-                status: false,
-                error: "حط كلمة البحث"
-            });
-        }
-
-        try {
-            const result = await scraper.scrape(query, type);
-
-            res.json({
-                status: true,
-                creator: "TERBO-SPAM",
-                total: result.length,
-                result
-            });
-
-        } catch (err) {
-            res.status(500).json({
-                status: false,
+                message: "⚠️ Server Error",
                 error: err.message
             });
         }
