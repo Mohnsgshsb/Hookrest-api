@@ -1,4 +1,3 @@
-
 const axios = require('axios');
 
 module.exports = function (app) {
@@ -12,7 +11,6 @@ module.exports = function (app) {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.7680.177 Mobile Safari/537.36',
             'Accept': 'application/json',
-            // ❌ شيلنا zstd عشان كان بيبوظ الرد
             'Accept-Encoding': 'gzip, deflate, br',
             'Content-Type': 'application/json',
             'sec-ch-ua-platform': '"Android"',
@@ -50,22 +48,33 @@ module.exports = function (app) {
                 },
                 {
                     headers: ytdown.headers,
-                    responseType: 'json'
+                    responseType: 'text' // ✅ FIX
                 }
             );
 
-            let data = res.data;
+            let data;
+            try {
+                data = JSON.parse(res.data);
+            } catch {
+                data = res.data;
+            }
 
-            // 🔥 لو فيه statusUrl نكمل عليه
+            // 🔥 لو فيه statusUrl نعمل polling
             if (data.statusUrl) {
                 let result;
 
                 for (let i = 0; i < 20; i++) {
+
                     const check = await axios.get(data.statusUrl, {
-                        headers: ytdown.headers
+                        headers: ytdown.headers,
+                        responseType: 'text'
                     });
 
-                    result = check.data;
+                    try {
+                        result = JSON.parse(check.data);
+                    } catch {
+                        result = check.data;
+                    }
 
                     if (
                         result?.downloadUrl ||
@@ -76,10 +85,10 @@ module.exports = function (app) {
                     await ytdown.sleep(2000);
                 }
 
-                return result;
+                return ytdown.final(result);
             }
 
-            return data;
+            return ytdown.final(data);
         },
 
         download: async (link) => {
@@ -87,7 +96,7 @@ module.exports = function (app) {
             if (!ytdown.isUrl(link)) throw new Error("لينك غلط 🗿");
 
             const res = await ytdown.request(link);
-            return ytdown.final(res);
+            return res;
         },
 
         final: (data) => ({
@@ -99,8 +108,9 @@ module.exports = function (app) {
         })
     };
 
-    // 🔥 Endpoint
-    app.get('/api/mp', async (req, res) => {
+    // 🔥 API ENDPOINT
+    app.get('/api/ytmp3', async (req, res) => {
+
         const { url } = req.query;
 
         if (!url) {
@@ -111,16 +121,18 @@ module.exports = function (app) {
         }
 
         try {
+
             const result = await ytdown.download(url);
 
-            res.json({
+            return res.json({
                 status: true,
                 creator: 'Mohnd',
                 ...result
             });
 
         } catch (err) {
-            res.status(500).json({
+
+            return res.status(500).json({
                 status: false,
                 error: err.message
             });
