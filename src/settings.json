@@ -169,6 +169,11 @@
           "desc": "Download youtube format mp4",
           "path": "/api/ytconvert/mp4?url="
         },
+         {
+          "name": "Play",
+          "desc": "Download youtube",
+          "path": "/search-and-download?q="
+        },
                 {
           "name": "facebook",
           "desc": "Download Facebook vid",
