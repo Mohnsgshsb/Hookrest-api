@@ -2,77 +2,84 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-    const userAgents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Mozilla/5.0 (Linux; Android 10)",
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)"
-    ];
-
-    function getRandomAgent() {
-        return userAgents[Math.floor(Math.random() * userAgents.length)];
-    }
-
     app.get("/api/akinator/answer", async (req, res) => {
         try {
+
             const {
-                answer,
+                answer,        // 0 = نعم / 1 = لا / 2 = لا اعلم / 3 = ممكن / 4 = غالباً لا
                 step,
                 progression,
-                session,
-                signature,
                 cookies
             } = req.query;
 
-            if (!answer || !session || !signature || !step || !progression) {
-                return res.status(400).json({
+            if (answer === undefined || !cookies) {
+                return res.json({
                     status: false,
-                    error: "ناقص بيانات"
+                    error: "حط answer و cookies"
                 });
             }
 
-            const { data } = await axios.post(
+            const body = new URLSearchParams({
+                step,
+                progression,
+                sid: "1",
+                cm: "false",
+                answer
+            });
+
+            const response = await axios.post(
                 "https://ar.akinator.com/answer",
-                new URLSearchParams({
-                    step,
-                    progression,
-                    sid: "1",
-                    cm: "false",
-                    answer,
-                    session,
-                    signature
-                }),
+                body,
                 {
                     headers: {
-                        "User-Agent": getRandomAgent(),
+                        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Mobile)",
                         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                        "x-requested-with": "XMLHttpRequest",
-                        "origin": "https://ar.akinator.com",
-                        "referer": "https://ar.akinator.com/game",
+                        "Accept": "*/*",
+                        "Origin": "https://ar.akinator.com",
+                        "Referer": "https://ar.akinator.com/",
+                        "X-Requested-With": "XMLHttpRequest",
                         "Cookie": cookies
                     }
                 }
             );
 
+            const data = response.data;
+
+            // 📊 تحديث البيانات
+            const nextStep = data?.parameters?.step;
+            const nextProgression = data?.parameters?.progression;
+
+            // 🎯 لو وصل للتخمين
+            if (data?.parameters?.identification) {
+                return res.json({
+                    status: true,
+                    guess: true,
+                    result: {
+                        name: data.parameters.identification.name,
+                        description: data.parameters.identification.description,
+                        image: data.parameters.identification.absolute_picture_path
+                    }
+                });
+            }
+
+            // ❓ استخراج السؤال الجديد
+            const question = data?.parameters?.question;
+
             res.json({
                 status: true,
+                guess: false,
                 result: {
-                    question: data.question,
-                    step: data.step,
-                    progression: data.progression,
-                    answers: [
-                        "نعم",
-                        "لا",
-                        "لا أعلم",
-                        "غالبًا",
-                        "غالبًا لا"
-                    ]
+                    question,
+                    step: nextStep,
+                    progression: nextProgression,
+                    cookies
                 }
             });
 
         } catch (err) {
-            res.status(500).json({
+            res.json({
                 status: false,
-                error: err.message
+                error: err.response?.status + " | " + JSON.stringify(err.response?.data) || err.message
             });
         }
     });
