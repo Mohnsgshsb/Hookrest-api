@@ -1,127 +1,95 @@
 const axios = require("axios");
-const qs = require("querystring");
 
 module.exports = function (app) {
 
-    const BASE = "https://ar.akinator.com";
+  app.get("/api/akinator/answer", async (req, res) => {
+    try {
 
-    // 🧠 سيشن واحدة للبوت
-    let gameState = {
-        session: null,
-        signature: null,
-        cookies: "",
-        step: "0",
-        progression: "0.00000"
-    };
+      const {
+        answer,
+        step,
+        progression,
+        session,
+        signature,
+        cookies
+      } = req.query;
 
-    const headers = (cookie = "") => ({
-        "user-agent": "Mozilla/5.0 (Linux; Android 10)",
-        "accept": "application/json, text/javascript, */*; q=0.01",
-        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "x-requested-with": "XMLHttpRequest",
-        "origin": BASE,
-        "referer": BASE + "/game",
-        "cookie": cookie
-    });
-
-    // 🔥 تحط بيانات start هنا مرة واحدة
-    app.get("/api/akinator/set", (req, res) => {
-        const { session, signature, cookies } = req.body;
-
-        gameState = {
-            session,
-            signature,
-            cookies,
-            step: "0",
-            progression: "0.00000"
-        };
-
-        res.json({
-            status: true,
-            message: "تم ضبط السيشن"
+      // تحقق من البيانات
+      if (
+        answer === undefined ||
+        !step ||
+        !progression ||
+        !session ||
+        !signature ||
+        !cookies
+      ) {
+        return res.json({
+          status: false,
+          creator: "TERBO-SPAM",
+          error: "ناقص بيانات"
         });
-    });
+      }
 
-    // 🔥 ANSWER ENDPOINT
-    app.get("/api/akinator/answer", async (req, res) => {
-        try {
+      const body = new URLSearchParams({
+        step,
+        progression,
+        sid: "1",
+        cm: "false",
+        answer,
+        session,
+        signature
+      });
 
-            const answer = req.query.answer;
-
-            if (answer === undefined) {
-                return res.json({
-                    status: false,
-                    message: "حط answer (0-4)"
-                });
-            }
-
-            if (!gameState.session) {
-                return res.json({
-                    status: false,
-                    message: "اعمل start الأول وبعدين set"
-                });
-            }
-
-            const response = await axios.post(
-                BASE + "/answer",
-                qs.stringify({
-                    step: gameState.step,
-                    progression: gameState.progression,
-                    sid: "1",
-                    cm: "false",
-                    answer: answer,
-                    step_last_proposition: "",
-                    session: gameState.session,
-                    signature: gameState.signature
-                }),
-                {
-                    headers: headers(gameState.cookies),
-                    validateStatus: () => true
-                }
-            );
-
-            const data = response.data;
-
-            if (!data || data.completion === "KO") {
-                return res.json({
-                    status: false,
-                    message: "Akinator رفض الطلب"
-                });
-            }
-
-            // تحديث الحالة
-            gameState.step = data.step;
-            gameState.progression = data.progression;
-
-            // 🎯 لو خمّن
-            if (data.id_proposition) {
-                return res.json({
-                    status: true,
-                    guess: true,
-                    name: data.name_proposition,
-                    description: data.description_proposition,
-                    photo: data.photo
-                });
-            }
-
-            // ❓ سؤال جديد
-            return res.json({
-                status: true,
-                guess: false,
-                question: data.question,
-                answers: data.trouvitudesReponses,
-                step: data.step,
-                progression: data.progression
-            });
-
-        } catch (err) {
-            console.error("ERROR:", err.message);
-
-            res.json({
-                status: false,
-                error: err.message
-            });
+      const response = await axios({
+        method: "POST",
+        url: "https://ar.akinator.com/answer",
+        data: body.toString(),
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36",
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+          "Origin": "https://ar.akinator.com",
+          "Referer": "https://ar.akinator.com/game",
+          "Cookie": cookies
         }
-    });
+      });
+
+      const data = response.data;
+
+      // لو وصل لمرحلة التخمين
+      if (data.id_proposition) {
+        return res.json({
+          status: true,
+          creator: "TERBO-SPAM",
+          guess: true,
+          result: {
+            name: data.name_proposition,
+            description: data.description_proposition,
+            photo: data.photo
+          }
+        });
+      }
+
+      // سؤال عادي
+      return res.json({
+        status: true,
+        creator: "TERBO-SPAM",
+        result: {
+          question: data.question,
+          step: data.step,
+          progression: data.progression
+        }
+      });
+
+    } catch (err) {
+      console.log(err.response?.data || err.message);
+
+      res.status(500).json({
+        status: false,
+        creator: "TERBO-SPAM",
+        error: err.response?.status || err.message
+      });
+    }
+  });
 
 };
