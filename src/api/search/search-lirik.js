@@ -13,7 +13,6 @@ module.exports = function (app) {
         "referer": BASE + "/theme-selection"
     };
 
-    // 🔥 START ONLY
     app.get("/api/akinator/start", async (req, res) => {
         try {
 
@@ -23,22 +22,39 @@ module.exports = function (app) {
                     sid: "1",
                     cm: "false"
                 }),
-                { headers }
+                {
+                    headers,
+                    timeout: 10000, // يمنع التعليق
+                    validateStatus: () => true // يمنع Axios يرمي error
+                }
             );
 
-            const cookies = response.headers["set-cookie"]?.join("; ") || "";
-            const html = response.data;
+            // لو الموقع رفض
+            if (response.status !== 200) {
+                return res.json({
+                    status: false,
+                    creator: "TERBO-SPAM",
+                    error: "Akinator blocked request (status " + response.status + ")"
+                });
+            }
 
-            // استخراج البيانات من الصفحة
-            const session = html.match(/session', '(.+?)'/)?.[1];
-            const signature = html.match(/signature', '(.+?)'/)?.[1];
-            const question = html.match(/id="question-label">([^<]+)/)?.[1];
+            const cookies = (response.headers["set-cookie"] || []).join("; ");
+            const html = response.data || "";
 
-            res.json({
+            // استخراج آمن بدون كراش
+            const sessionMatch = html.match(/session', '(.+?)'/);
+            const signatureMatch = html.match(/signature', '(.+?)'/);
+            const questionMatch = html.match(/id="question-label">([^<]+)/);
+
+            const session = sessionMatch ? sessionMatch[1] : null;
+            const signature = signatureMatch ? signatureMatch[1] : null;
+            const question = questionMatch ? questionMatch[1] : "❓ حصل مشكلة في استخراج السؤال";
+
+            return res.json({
                 status: true,
                 creator: "TERBO-SPAM",
                 result: {
-                    question: question || "❓ مش لاقي السؤال",
+                    question,
                     session,
                     signature,
                     step: "0",
@@ -48,22 +64,12 @@ module.exports = function (app) {
             });
 
         } catch (err) {
-            res.status(500).json({
+            console.error("AKINATOR START ERROR:", err.message);
+
+            return res.json({
                 status: false,
                 creator: "TERBO-SPAM",
                 error: err.message
-            });
-        }
-    });
-
-};ج                    guess: data.name_proposition || null
-                }
-            });
-
-        } catch (err) {
-            res.status(500).json({
-                status: false,
-                error: err.response?.data || err.message
             });
         }
     });
