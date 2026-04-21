@@ -5,41 +5,46 @@ module.exports = function (app) {
     app.get("/api/akinator/start", async (req, res) => {
         try {
 
-            // 1️⃣ افتح اللعبة
-            const { data, headers } = await axios.post(
+            const response = await axios.post(
                 "https://ar.akinator.com/game",
-                new URLSearchParams({ sid: "1", cm: "false" }),
-                { headers: { "User-Agent": "Mozilla/5.0" } }
-            );
-
-            const cookies = headers["set-cookie"]
-                ?.map(c => c.split(";")[0])
-                .join("; ");
-
-            const question = data.match(/id="question-label">(.+?)</)?.[1];
-
-            // 2️⃣ bootstrap (زي الصورة)
-            const { data: boot } = await axios.post(
-                "https://ar.akinator.com/answer",
-                `step=0&progression=0&sid=1&cm=false&answer=0&session=175&signature=7ZtV0mJ1D%2Ffpqw`, // حط القيم بتاعتك
+                new URLSearchParams({
+                    sid: "1",
+                    cm: "false"
+                }),
                 {
                     headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "X-Requested-With": "XMLHttpRequest",
-                        "Cookie": cookies,
-                        "User-Agent": "Mozilla/5.0"
+                        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Mobile)",
+                        "Accept": "text/html,application/xhtml+xml",
+                        "Accept-Language": "en-US,en;q=0.9",
+                        "Origin": "https://ar.akinator.com",
+                        "Referer": "https://ar.akinator.com/"
                     }
                 }
             );
 
+            // 🍪 استخراج الكوكيز
+            const cookies = response.headers["set-cookie"]
+                ?.map(c => c.split(";")[0])
+                .join("; ");
+
+            // ❓ استخراج السؤال
+            const question = response.data.match(/id="question-label">(.+?)</)?.[1];
+
+            if (!question) {
+                return res.json({
+                    status: false,
+                    creator: "TERBO-SPAM",
+                    error: "فشل استخراج السؤال"
+                });
+            }
+
             res.json({
                 status: true,
+                creator: "TERBO-SPAM",
                 result: {
-                    question: boot.question,
-                    step: boot.step,
-                    progression: boot.progression,
-                    session: "175",
-                    signature: "7ZtV0mJ1D/fpqw",
+                    question,
+                    step: "0",
+                    progression: "0",
                     cookies
                 }
             });
@@ -47,7 +52,8 @@ module.exports = function (app) {
         } catch (err) {
             res.json({
                 status: false,
-                error: err.message
+                creator: "TERBO-SPAM",
+                error: err.response?.status + " | " + err.response?.data || err.message
             });
         }
     });
