@@ -25,7 +25,7 @@ module.exports = function (app) {
     });
 
     // 🔥 تحط بيانات start هنا مرة واحدة
-    app.post("/api/akinator/set", (req, res) => {
+    app.get("/api/akinator/set", (req, res) => {
         const { session, signature, cookies } = req.body;
 
         gameState = {
