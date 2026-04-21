@@ -1,65 +1,66 @@
-const express = require("express");
 const axios = require("axios");
 
-module.exports = function (app) {
+module.exports = async (req, res) => {
+  try {
 
-  app.get("/api/akinator/start", async (req, res) => {
-    try {
-
-      // 🔥 أول ريكوست لبدء اللعبة
-      const response = await axios.post(
-        "https://ar.akinator.com/game",
-        new URLSearchParams({
-          sid: "1",
-          cm: "false"
-        }),
-        {
-          headers: {
-            "user-agent": "Mozilla/5.0",
-            "content-type": "application/x-www-form-urlencoded"
-          }
-        }
-      );
-
-      const html = response.data;
-
-      // 🔥 استخراج البيانات من الصفحة
-      const session = html.match(/session',\s*'([^']+)'/)?.[1];
-      const signature = html.match(/signature',\s*'([^']+)'/)?.[1];
-      const question = html.match(/id="question-label">([^<]+)/)?.[1];
-
-      const cookies = response.headers["set-cookie"]
-        ?.map(c => c.split(";")[0])
-        .join("; ");
-
-      if (!session || !signature || !question) {
-        return res.json({
-          status: false,
-          error: "❌ فشل استخراج البيانات"
-        });
+    const response = await axios({
+      method: "POST",
+      url: "https://ar.akinator.com/game",
+      data: "sid=1&cm=false",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Origin": "https://ar.akinator.com",
+        "Referer": "https://ar.akinator.com/",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br"
       }
+    });
 
-      res.json({
-        status: true,
-        creator: "TERBO-SPAM",
-        result: {
-          question,
-          session,
-          signature,
-          step: "0",
-          progression: "0",
-          cookies
-        }
-      });
+    const html = response.data;
 
-    } catch (err) {
-      console.error("START ERROR:", err.message);
+    // 🔥 استخراج القيم
+    const get = (regex) => {
+      const m = html.match(regex);
+      return m ? m[1] : null;
+    };
 
-      res.json({
+    const session = get(/session', '(\d+)'/);
+    const signature = get(/signature', '([^']+)'/);
+    const question = get(/id="question-label">([^<]+)/);
+
+    // 🔥 الكوكيز
+    const cookies = response.headers["set-cookie"]
+      ?.map(c => c.split(";")[0])
+      .join("; ");
+
+    if (!session || !signature) {
+      return res.json({
         status: false,
-        error: err.message
+        error: "فشل استخراج البيانات (ممكن الموقع غير الاستركشر)"
       });
     }
-  });
 
+    res.json({
+      status: true,
+      creator: "TERBO-SPAM",
+      result: {
+        question,
+        step: "0",
+        progression: "0",
+        session,
+        signature,
+        cookies
+      }
+    });
+
+  } catch (err) {
+    console.log(err.response?.data || err.message);
+
+    res.status(500).json({
+      status: false,
+      error: err.response?.status || err.message
+    });
+  }
 };
