@@ -4,31 +4,48 @@ module.exports = function (app) {
 
     app.get("/api/akinator/start", async (req, res) => {
         try {
-            const { data } = await axios.get(
-                "https://srv.akinator.com:9157/ws/new_session",
+
+            // 1️⃣ افتح اللعبة
+            const { data, headers } = await axios.post(
+                "https://ar.akinator.com/game",
+                new URLSearchParams({ sid: "1", cm: "false" }),
+                { headers: { "User-Agent": "Mozilla/5.0" } }
+            );
+
+            const cookies = headers["set-cookie"]
+                ?.map(c => c.split(";")[0])
+                .join("; ");
+
+            const question = data.match(/id="question-label">(.+?)</)?.[1];
+
+            // 2️⃣ bootstrap (زي الصورة)
+            const { data: boot } = await axios.post(
+                "https://ar.akinator.com/answer",
+                `step=0&progression=0&sid=1&cm=false&answer=0&session=175&signature=7ZtV0mJ1D%2Ffpqw`, // حط القيم بتاعتك
                 {
-                    params: {
-                        partner: 1,
-                        player: "website-desktop"
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Cookie": cookies,
+                        "User-Agent": "Mozilla/5.0"
                     }
                 }
             );
 
-            const info = data.parameters;
-
             res.json({
                 status: true,
                 result: {
-                    question: info.step_information.question,
-                    step: info.step_information.step,
-                    progression: info.step_information.progression,
-                    session: info.identification.session,
-                    signature: info.identification.signature
+                    question: boot.question,
+                    step: boot.step,
+                    progression: boot.progression,
+                    session: "175",
+                    signature: "7ZtV0mJ1D/fpqw",
+                    cookies
                 }
             });
 
         } catch (err) {
-            res.status(500).json({
+            res.json({
                 status: false,
                 error: err.message
             });
