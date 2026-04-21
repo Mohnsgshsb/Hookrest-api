@@ -1,95 +1,122 @@
-
 const axios = require("axios");
+const qs = require("querystring");
 
 module.exports = function (app) {
 
+    const BASE = "https://ar.akinator.com";
+
+    // 🧠 سيشن واحدة للبوت
+    let gameState = {
+        session: null,
+        signature: null,
+        cookies: "",
+        step: "0",
+        progression: "0.00000"
+    };
+
+    const headers = (cookie = "") => ({
+        "user-agent": "Mozilla/5.0 (Linux; Android 10)",
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "x-requested-with": "XMLHttpRequest",
+        "origin": BASE,
+        "referer": BASE + "/game",
+        "cookie": cookie
+    });
+
+    // 🔥 تحط بيانات start هنا مرة واحدة
+    app.post("/api/akinator/set", (req, res) => {
+        const { session, signature, cookies } = req.body;
+
+        gameState = {
+            session,
+            signature,
+            cookies,
+            step: "0",
+            progression: "0.00000"
+        };
+
+        res.json({
+            status: true,
+            message: "تم ضبط السيشن"
+        });
+    });
+
+    // 🔥 ANSWER ENDPOINT
     app.get("/api/akinator/answer", async (req, res) => {
         try {
 
-            const {
-                answer,
-                step,
-                progression,
-                cookies
-            } = req.query;
+            const answer = req.query.answer;
 
-            if (answer === undefined || !cookies) {
+            if (answer === undefined) {
                 return res.json({
                     status: false,
-                    error: "حط answer و cookies"
+                    message: "حط answer (0-4)"
                 });
             }
 
-            const body = new URLSearchParams({
-                step,
-                progression,
-                sid: "1",
-                cm: "false",
-                answer
-            });
+            if (!gameState.session) {
+                return res.json({
+                    status: false,
+                    message: "اعمل start الأول وبعدين set"
+                });
+            }
 
             const response = await axios.post(
-                "https://ar.akinator.com/answer",
-                body,
+                BASE + "/answer",
+                qs.stringify({
+                    step: gameState.step,
+                    progression: gameState.progression,
+                    sid: "1",
+                    cm: "false",
+                    answer: answer,
+                    step_last_proposition: "",
+                    session: gameState.session,
+                    signature: gameState.signature
+                }),
                 {
-                    headers: {
-                        "User-Agent": "Mozilla/5.0",
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "Origin": "https://ar.akinator.com",
-                        "Referer": "https://ar.akinator.com/",
-                        "Cookie": cookies
-                    }
+                    headers: headers(gameState.cookies),
+                    validateStatus: () => true
                 }
             );
 
-            const html = response.data;
+            const data = response.data;
 
-            // ❓ السؤال الجديد (زي start)
-            const question = html.match(/id="question-label">(.+?)</)?.[1];
+            if (!data || data.completion === "KO") {
+                return res.json({
+                    status: false,
+                    message: "Akinator رفض الطلب"
+                });
+            }
 
-            // 📊 step
-            const newStep = html.match(/name="step" value="(.+?)"/)?.[1];
+            // تحديث الحالة
+            gameState.step = data.step;
+            gameState.progression = data.progression;
 
-            // 📈 progression
-            const newProg = html.match(/name="progression" value="(.+?)"/)?.[1];
-
-            // 🎯 لو خمّن (ممكن يظهر في HTML)
-            const name = html.match(/class="proposal-title">(.+?)</)?.[1];
-            const desc = html.match(/class="proposal-description">(.+?)</)?.[1];
-            const image = html.match(/class="proposal-picture".+?src="(.+?)"/)?.[1];
-
-            if (name) {
+            // 🎯 لو خمّن
+            if (data.id_proposition) {
                 return res.json({
                     status: true,
                     guess: true,
-                    result: {
-                        name,
-                        description: desc,
-                        image
-                    }
+                    name: data.name_proposition,
+                    description: data.description_proposition,
+                    photo: data.photo
                 });
             }
 
-            if (!question) {
-                return res.json({
-                    status: false,
-                    error: "فشل استخراج السؤال",
-                    debug: html.slice(0, 500)
-                });
-            }
-
-            res.json({
+            // ❓ سؤال جديد
+            return res.json({
                 status: true,
                 guess: false,
-                result: {
-                    question,
-                    step: newStep,
-                    progression: newProg,
-                    cookies
-                }
+                question: data.question,
+                answers: data.trouvitudesReponses,
+                step: data.step,
+                progression: data.progression
             });
 
         } catch (err) {
+            console.error("ERROR:", err.message);
+
             res.json({
                 status: false,
                 error: err.message
