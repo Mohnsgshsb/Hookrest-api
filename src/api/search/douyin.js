@@ -1,10 +1,10 @@
+const express = require("express");
 const axios = require("axios");
 
 module.exports = function (app) {
 
   app.get("/api/akinator/answer", async (req, res) => {
     try {
-
       const {
         answer,
         step,
@@ -14,11 +14,11 @@ module.exports = function (app) {
         cookies
       } = req.query;
 
-      // تحقق من البيانات
+      // تحقق
       if (
         answer === undefined ||
-        !step ||
-        !progression ||
+        step === undefined ||
+        progression === undefined ||
         !session ||
         !signature ||
         !cookies
@@ -26,68 +26,62 @@ module.exports = function (app) {
         return res.json({
           status: false,
           creator: "TERBO-SPAM",
-          error: "ناقص بيانات"
+          message: "❌ ناقص بيانات"
         });
       }
 
+      // تجهيز body زي الموقع
       const body = new URLSearchParams({
-        step,
-        progression,
+        step: step,
+        progression: progression,
         sid: "1",
         cm: "false",
-        answer,
-        session,
-        signature
+        answer: answer,
+        step_last_proposition: "",
+        session: session,
+        signature: signature
       });
 
-      const response = await axios({
-        method: "POST",
-        url: "https://ar.akinator.com/answer",
-        data: body.toString(),
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-Requested-With": "XMLHttpRequest",
-          "Origin": "https://ar.akinator.com",
-          "Referer": "https://ar.akinator.com/game",
-          "Cookie": cookies
+      // request
+      const response = await axios.post(
+        "https://ar.akinator.com/answer",
+        body.toString(),
+        {
+          headers: {
+            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "user-agent":
+              "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36",
+            "x-requested-with": "XMLHttpRequest",
+            origin: "https://ar.akinator.com",
+            referer: "https://ar.akinator.com/game",
+            cookie: cookies
+          }
         }
-      });
+      );
 
       const data = response.data;
 
-      // لو وصل لمرحلة التخمين
-      if (data.id_proposition) {
-        return res.json({
-          status: true,
-          creator: "TERBO-SPAM",
-          guess: true,
-          result: {
-            name: data.name_proposition,
-            description: data.description_proposition,
-            photo: data.photo
-          }
-        });
-      }
-
-      // سؤال عادي
+      // رجع كل حاجة زي ما هي + تنسيقك
       return res.json({
         status: true,
         creator: "TERBO-SPAM",
         result: {
+          completion: data.completion,
           question: data.question,
+          question_id: data.question_id,
           step: data.step,
-          progression: data.progression
+          progression: data.progression,
+          trouvitudesReponses: data.trouvitudesReponses
         }
       });
 
     } catch (err) {
-      console.log(err.response?.data || err.message);
+      console.error(err.response?.data || err.message);
 
-      res.status(500).json({
+      return res.json({
         status: false,
         creator: "TERBO-SPAM",
-        error: err.response?.status || err.message
+        error: err.response?.data || err.message
       });
     }
   });
