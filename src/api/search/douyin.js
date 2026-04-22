@@ -14,7 +14,6 @@ module.exports = function (app) {
         cookies
       } = req.query;
 
-      // تحقق
       if (
         answer === undefined ||
         step === undefined ||
@@ -30,7 +29,7 @@ module.exports = function (app) {
         });
       }
 
-      // تجهيز body زي الموقع
+      // ───── إرسال الإجابة ─────
       const body = new URLSearchParams({
         step: step,
         progression: progression,
@@ -42,7 +41,6 @@ module.exports = function (app) {
         signature: signature
       });
 
-      // request
       const response = await axios.post(
         "https://ar.akinator.com/answer",
         body.toString(),
@@ -61,17 +59,67 @@ module.exports = function (app) {
 
       const data = response.data;
 
-      // رجع كل حاجة زي ما هي + تنسيقك
+      // ───── لو خمّن ─────
+      if (
+        data?.completion === "OK" &&
+        data?.parameters?.elements?.length > 0
+      ) {
+        const guess = data.parameters.elements[0];
+
+        return res.json({
+          status: true,
+          creator: "TERBO-SPAM",
+          result: {
+            completion: "WIN",
+            name: guess.name,
+            description: guess.description
+          }
+        });
+      }
+
+      // ───── fallback ─────
+      if (parseFloat(data.progression) >= 80) {
+        try {
+          const listRes = await axios.post(
+            "https://ar.akinator.com/list",
+            new URLSearchParams({
+              session: session,
+              signature: signature,
+              step: data.step
+            }),
+            {
+              headers: {
+                "content-type": "application/x-www-form-urlencoded",
+                cookie: cookies
+              }
+            }
+          );
+
+          const guess = listRes.data?.parameters?.elements?.[0];
+
+          if (guess) {
+            return res.json({
+              status: true,
+              creator: "TERBO-SPAM",
+              result: {
+                completion: "WIN",
+                name: guess.name,
+                description: guess.description
+              }
+            });
+          }
+        } catch (e) {}
+      }
+
+      // ───── باقي الأسئلة ─────
       return res.json({
         status: true,
         creator: "TERBO-SPAM",
         result: {
           completion: data.completion,
           question: data.question,
-          question_id: data.question_id,
           step: data.step,
-          progression: data.progression,
-          trouvitudesReponses: data.trouvitudesReponses
+          progression: data.progression
         }
       });
 
