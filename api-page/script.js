@@ -249,11 +249,19 @@ categoryBody.style.display = "grid"
       modal.show()
     })
 
-    document.querySelectorAll(".tab-button, .response-tab-button").forEach((button) => {
-      button.addEventListener("click", function () {
-        const isMainTab = this.classList.contains("tab-button")
-        const groupClass = isMainTab ? "tab-button" : "response-tab-button"
-        const paneClass = isMainTab ? ".tab-pane" : ".response-tab-pane"
+document.querySelectorAll(".tab-button").forEach((button) => {
+      button.addEventListener("click", function () 
+                              document.querySelectorAll(".tab-button").forEach((button) => {
+  button.addEventListener("click", function () {
+
+    document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"))
+    this.classList.add("active")
+
+    document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"))
+    document.getElementById(this.dataset.tab + "Tab").classList.add("active")
+
+  })
+})
         this.parentElement.querySelectorAll(`.${groupClass}`).forEach((btn) => btn.classList.remove("active"))
         this.classList.add("active")
         const tabId = isMainTab
