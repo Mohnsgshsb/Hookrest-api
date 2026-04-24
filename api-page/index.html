@@ -3,268 +3,162 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
 <title id="page"></title>
 
 <link rel="icon" href="/src/icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 
 <style>
-:root{
-  --bg:#0f1221;
-  --card:#1a1f35;
-  --border:#2a2f4a;
-  --primary:#7c6cff;
-  --text:#eaeaff;
-}
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:'Inter',sans-serif;
-}
-
-body{
-  background: radial-gradient(circle at top,#1a1f35,#0f1221);
-  color:var(--text);
-}
-
-/* HEADER */
-.header{
-  text-align:center;
-  padding:40px 20px;
-}
-
-.header img{
-  width:70px;
-  border-radius:20px;
-  margin-bottom:10px;
-}
-
-.header h1{
-  font-size:28px;
-  font-weight:700;
-}
-
-.header p{
-  opacity:.7;
-}
-
-/* STATS */
-.stats{
-  display:flex;
-  justify-content:center;
-  gap:15px;
-  margin-top:20px;
-}
-
-.stat{
-  background:var(--card);
-  padding:15px;
-  border-radius:12px;
-  width:100px;
-  text-align:center;
-}
-
-.stat span{
-  font-size:20px;
-  color:var(--primary);
-  font-weight:600;
-}
-
-/* SEARCH */
-.search{
-  max-width:600px;
-  margin:30px auto;
-}
-
-.search input{
-  width:100%;
-  padding:12px;
-  border-radius:12px;
-  border:none;
-  background:#1f2440;
-  color:#fff;
-}
-
-/* GRID */
-.grid{
+/* GRID بدل الاكورديون */
+#apiContent{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
   gap:20px;
-  padding:20px;
 }
 
-/* CARD */
-.card{
+/* الكارت */
+.api-category{
   background:linear-gradient(180deg,#1a1f35,#14182b);
   border-radius:16px;
   padding:15px;
-  border:1px solid var(--border);
+  border:1px solid #2a2f4a;
 }
 
-.card h3{
+/* العنوان */
+.api-category-header{
+  font-weight:600;
+  margin-bottom:10px;
   display:flex;
   align-items:center;
   gap:10px;
-  margin-bottom:10px;
-  font-size:16px;
+  cursor:default;
 }
 
-.card h3 i{
-  background:var(--primary);
-  padding:8px;
-  border-radius:10px;
+.api-category-header i{
+  display:none; /* نشيل السهم */
 }
 
-/* ENDPOINT */
-.endpoint{
+/* المحتوى يبقى ظاهر دايماً */
+.api-category-content{
+  display:flex !important;
+  flex-direction:column;
+  gap:8px;
+}
+
+/* endpoint */
+.api-endpoint-card{
   background:#22274a;
   padding:10px;
   border-radius:10px;
-  margin-top:8px;
   display:flex;
+  align-items:center;
   justify-content:space-between;
   cursor:pointer;
   transition:.2s;
 }
 
-.endpoint:hover{
+.api-endpoint-card:hover{
   background:#2c3270;
 }
 
-/* MODAL */
-.modal{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:#0009;
-  display:none;
-  align-items:center;
-  justify-content:center;
+.method-badge{
+  background:#6c5ce7;
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:12px;
 }
 
-.modal-content{
-  background:#1a1f35;
-  padding:20px;
-  border-radius:16px;
-  width:90%;
-  max-width:600px;
+.endpoint-text{
+  flex:1;
+  margin:0 10px;
 }
 
-button{
-  padding:10px 15px;
-  border:none;
-  border-radius:10px;
-  background:var(--primary);
-  color:#fff;
-  cursor:pointer;
-  margin-top:10px;
-}
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <img src="/src/icon.png">
+<div class="container mt-4">
   <h1 id="name"></h1>
   <p id="description"></p>
 
-  <div class="stats">
-    <div class="stat"><span id="totalApis">0</span><br>APIs</div>
-    <div class="stat"><span id="totalCat">0</span><br>Categories</div>
-    <div class="stat"><span>24/7</span><br>Uptime</div>
-  </div>
+  <input id="searchInput" class="form-control mb-3" placeholder="Search API">
+
+  <div id="apiContent"></div>
 </div>
 
-<div class="search">
-  <input id="search" placeholder="Search API...">
+<!-- 🔥 المودال زي ما انت طالب بالظبط -->
+<div class="modal fade" id="apiResponseModal" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered modal-xl">
+<div class="modal-content">
+
+<div class="modal-header">
+<div>
+<h5 id="apiResponseModalLabel"></h5>
+<p id="apiResponseModalDesc"></p>
+</div>
+<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 
-<div class="grid" id="grid"></div>
+<div class="modal-body">
 
-<!-- MODAL -->
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <h3 id="apiName"></h3>
-    <p id="apiDesc"></p>
-
-    <input id="paramInput" placeholder="Enter parameter">
-    <button onclick="sendRequest()">Execute</button>
-
-    <pre id="result"></pre>
-  </div>
+<div class="endpoint-info">
+<span class="method-badge">GET</span>
+<span id="modalEndpointPath"></span>
 </div>
 
-<script>
-const BASEURL = window.location.origin
+<p id="modalApiDescription"></p>
 
-let currentAPI = ""
+<div class="tab-buttons">
+<button class="tab-button active" data-tab="parameters">Parameters</button>
+<button class="tab-button" data-tab="responses">Responses</button>
+</div>
 
-fetch("/src/settings.json")
-.then(res=>res.json())
-.then(data=>{
+<div class="tab-content-wrapper">
 
-document.getElementById("name").innerText = data.name
-document.getElementById("description").innerText = data.description
+<div id="parametersTab" class="tab-pane active">
+<div id="apiQueryInputContainer"></div>
 
-document.getElementById("totalCat").innerText = data.categories.length
+<div class="action-buttons">
+<button id="submitQueryBtn" class="btn btn-primary">Execute</button>
+<button id="clearQueryBtn" class="btn btn-outline">Clear</button>
+</div>
+</div>
 
-let total = 0
-const grid = document.getElementById("grid")
+<div id="responsesTab" class="tab-pane">
 
-data.categories.forEach(cat=>{
-  total += cat.items.length
+<div>
+<h6>Curl</h6>
+<pre id="apiCurlContent"></pre>
+</div>
 
-  const card = document.createElement("div")
-  card.className = "card"
+<div>
+<h6>Request URL</h6>
+<pre id="apiRequestUrlContent"></pre>
+</div>
 
-  card.innerHTML = `<h3><i class="fas fa-code"></i>${cat.name}</h3>`
+<div>
+<h6>Response</h6>
+<pre id="apiResponseCode"></pre>
+<pre id="apiResponseBody"></pre>
+<pre id="apiResponseHeaders"></pre>
+</div>
 
-  cat.items.forEach(api=>{
-    const el = document.createElement("div")
-    el.className = "endpoint"
-    el.innerHTML = `<span>${api.name}</span><span>→</span>`
+</div>
 
-    el.onclick = ()=>{
-      currentAPI = api.path
-      document.getElementById("modal").style.display="flex"
-      document.getElementById("apiName").innerText = api.name
-      document.getElementById("apiDesc").innerText = api.desc
-    }
+</div>
+</div>
 
-    card.appendChild(el)
-  })
+</div>
+</div>
+</div>
 
-  grid.appendChild(card)
-})
-
-document.getElementById("totalApis").innerText = total
-
-})
-
-function sendRequest(){
-  const param = document.getElementById("paramInput").value
-  const url = BASEURL + currentAPI + (param ? "?query="+param : "")
-
-  fetch(url)
-  .then(res=>res.text())
-  .then(res=>{
-    document.getElementById("result").innerText = res
-  })
-}
-
-document.getElementById("search").oninput = function(){
-  const val = this.value.toLowerCase()
-  document.querySelectorAll(".endpoint").forEach(e=>{
-    e.style.display = e.innerText.toLowerCase().includes(val) ? "flex" : "none"
-  })
-}
-</script>
+<!-- نفس الاستيراد -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/script.js"></script>
 
 </body>
 </html>
