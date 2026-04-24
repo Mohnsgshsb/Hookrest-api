@@ -115,7 +115,7 @@ categoryBody.style.display = "grid"
         endpointCard.dataset.apiName = item.name
         endpointCard.dataset.apiDesc = item.desc
         endpointCard.dataset.apiInnerDesc = item.innerDesc || ""
-        endpointCard.innerHTML = `<span class="method-badge">GET</span><div class="endpoint-text"><span class="endpoint-path">${item.path.split("?")[0]}</span><span class="endpoint-name">${item.name}</span></div><i class="fas fa-lock lock-icon"></i><i class="fas fa-chevron-down"></i>`
+        endpointCard.innerHTML = `<span class="method-badge">GET</span><div class="endpoint-text"><span class="endpoint-path">${item.path.split("?")[0]}</span><span class="endpoint-name">${item.name}</span></div><i class="fas fa-angle-down"></i>`
         categoryBody.appendChild(endpointCard)
       })
       categoryDiv.appendChild(categoryBody)
