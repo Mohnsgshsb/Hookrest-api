@@ -96,13 +96,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     settings.categories.forEach((category) => {
       const categoryDiv = document.createElement("div")
       categoryDiv.className = "api-category animate" // Added animate class
-      const categoryHeader = document.createElement("div")
-      categoryHeader.className = "api-category-header"
-      categoryHeader.innerHTML = `<span>${category.name}</span><i class="fas fa-chevron-down"></i>`
-      categoryDiv.appendChild(categoryHeader)
-      const categoryBody = document.createElement("div")
-      categoryBody.className = "api-category-content"
-      categoryBody.style.display = "none"
+      // عنوان بسيط بدل الهيدر القابل للفتح
+const categoryTitle = document.createElement("div")
+categoryTitle.className = "api-category-header"
+categoryTitle.innerHTML = `<span>${category.name}</span>`
+
+categoryDiv.appendChild(categoryTitle)
+
+// البودي يفضل ظاهر دايماً
+const categoryBody = document.createElement("div")
+categoryBody.className = "api-category-content"
+categoryBody.style.display = "grid"
       const sortedItems = category.items.sort((a, b) => a.name.localeCompare(b.name))
       sortedItems.forEach((item) => {
         const endpointCard = document.createElement("div")
@@ -118,13 +122,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       apiContent.appendChild(categoryDiv)
 
       observer.observe(categoryDiv)
-
-      categoryHeader.addEventListener("click", () => {
-        categoryBody.style.display = categoryBody.style.display === "none" ? "grid" : "none"
-        categoryHeader.classList.toggle("collapsed")
-        categoryHeader.querySelector(".fas").classList.toggle("fa-chevron-up")
-        categoryHeader.querySelector(".fas").classList.toggle("fa-chevron-down")
-      })
     })
 
     const searchInput = document.getElementById("searchInput")
@@ -447,4 +444,5 @@ async function handleApiRequest(apiUrl, apiName) {
     apiResponseBody.textContent = `Network or other error occurred: ${error.message}`
     apiResponseHeaders.textContent = "N/A"
   }
-}
+        }
+          
