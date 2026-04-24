@@ -90,6 +90,32 @@ body.no-scroll {
   position: relative;
   z-index: 1;
 }
+.custom-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.custom-tab {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.custom-tab.active {
+  background: var(--primary-color);
+  color: #fff;
+  box-shadow: 0 0 10px var(--primary-color);
+}
+
+.custom-tab:hover {
+  transform: translateY(-2px);
+}
 
 /* Enhanced navbar with glass morphism effect */
 .navbar {
@@ -677,6 +703,11 @@ footer::before {
   display: flex;
   gap: 1rem;
   margin-top: 1.5rem;
+}
+
+.action-buttons .btn {
+  flex: 1;        /* يخلي كل زرار ياخد نص العرض */
+  width: 100%;
 }
 
 .btn {
