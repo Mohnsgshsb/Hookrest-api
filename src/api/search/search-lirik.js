@@ -1,9 +1,9 @@
 const yts = require('yt-search');
-const ytdl = require('ytdl-core');
+const ytdl = require('ytdl'); // تغيير إلى ytdl (بدون core)
 
 module.exports = function(app) {
 
-    app.get('/song', async (req, res) => {
+    app.get('/video', async (req, res) => {
         const { q } = req.query;
 
         if (!q) {
@@ -14,7 +14,7 @@ module.exports = function(app) {
         }
 
         try {
-            // 🔎 بحث سريع
+            // 🔎 بحث عن الفيديو
             const search = await yts(q);
             const video = search.videos[0];
 
@@ -25,8 +25,8 @@ module.exports = function(app) {
                 });
             }
 
-            // ⚡ بدون getInfo (أسرع)
-            const audioUrl = `https://www.youtube.com/watch?v=${video.videoId}`;
+            // ⚡ تحميل الفيديو مباشرة باستخدام ytdl
+            const videoUrl = video.url;
 
             res.json({
                 status: true,
@@ -37,9 +37,9 @@ module.exports = function(app) {
                     duration: video.timestamp,
                     thumbnail: video.thumbnail,
                     url: video.url,
-
-                    // رجّع اللينك الأساسي بدل processing تقيل
-                    audio: audioUrl
+                },
+                download: {
+                    video: videoUrl  // إرجاع رابط تحميل الفيديو مباشرة
                 }
             });
 
@@ -50,5 +50,4 @@ module.exports = function(app) {
             });
         }
     });
-
 };
