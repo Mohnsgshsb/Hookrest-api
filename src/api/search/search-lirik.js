@@ -1,69 +1,63 @@
-const axios = require("axios");
+const yts = require('yt-search');
+const ytdl = require('ytdl-core');
 
-module.exports = function (app) {
+module.exports = function(app) {
 
-  app.get("/api/akinator/start", async (req, res) => {
-    try {
+    app.get('/song', async (req, res) => {
+        const { q } = req.query;
 
-      const response = await axios({
-        method: "POST",
-        url: "https://ar.akinator.com/game",
-        data: "sid=1&cm=false",
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36",
-          "Accept": "text/html,application/xhtml+xml",
-          "Content-Type": "application/x-www-form-urlencoded",
-          "Origin": "https://ar.akinator.com",
-          "Referer": "https://ar.akinator.com/",
-          "Accept-Language": "en-US,en;q=0.9"
+        if (!q) {
+            return res.status(400).json({
+                status: false,
+                error: 'Query is required'
+            });
         }
-      });
 
-      const html = response.data;
+        try {
+            // 1️⃣ البحث
+            const search = await yts(q);
+            const video = search.videos[0];
 
-      const get = (regex) => {
-        const m = html.match(regex);
-        return m ? m[1] : null;
-      };
+            if (!video) {
+                return res.status(404).json({
+                    status: false,
+                    error: 'No results found'
+                });
+            }
 
-      const session = get(/session', '(\d+)'/);
-      const signature = get(/signature', '([^']+)'/);
-      const question = get(/id="question-label">([^<]+)/);
+            // 2️⃣ جلب معلومات الفيديو الكاملة
+            const info = await ytdl.getInfo(video.url);
 
-      const cookies = response.headers["set-cookie"]
-        ?.map(c => c.split(";")[0])
-        .join("; ");
+            // 3️⃣ اختيار أفضل صوت
+            const audioFormat = ytdl.chooseFormat(info.formats, {
+                quality: 'highestaudio'
+            });
 
-      if (!session || !signature) {
-        return res.json({
-          status: false,
-          creator: "TERBO-SPAM",
-          error: "فشل استخراج البيانات"
-        });
-      }
+            // 4️⃣ إرسال النتيجة
+            res.status(200).json({
+                status: true,
+                result: {
+                    title: video.title,
+                    description: video.description,
+                    channel: video.author.name,
+                    views: video.views,
+                    duration: video.timestamp,
+                    seconds: video.seconds,
+                    uploadedAt: video.ago,
+                    thumbnail: video.thumbnail,
+                    url: video.url,
 
-      res.json({
-        status: true,
-        creator: "TERBO-SPAM",
-        result: {
-          question,
-          step: "0",
-          progression: "0",
-          session,
-          signature,
-          cookies
+                    // 🔥 أهم حاجة
+                    audio: audioFormat.url
+                }
+            });
+
+        } catch (error) {
+            res.status(500).json({
+                status: false,
+                error: error.message
+            });
         }
-      });
-
-    } catch (err) {
-      console.log(err.response?.data || err.message);
-
-      res.status(500).json({
-        status: false,
-        creator: "TERBO-SPAM",
-        error: err.response?.status || err.message
-      });
-    }
-  });
+    });
 
 };
