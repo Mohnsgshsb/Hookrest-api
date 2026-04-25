@@ -3,7 +3,7 @@ const ytdl = require('ytdl'); // تغيير إلى ytdl (بدون core)
 
 module.exports = function(app) {
 
-    app.get('/video', async (req, res) => {
+    app.get('/video1', async (req, res) => {
         const { q } = req.query;
 
         if (!q) {
