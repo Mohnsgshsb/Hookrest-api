@@ -116,7 +116,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     <span class="method-badge">GET</span>
     <div class="endpoint-info">
         <div class="endpoint-name">${item.name}</div>
-        <div class="endpoint-path">${item.path}</div>
         <div class="endpoint-desc">${item.desc}</div>
     </div>
 </div>
