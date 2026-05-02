@@ -1,6 +1,6 @@
 const BASEURL = window.location.origin
-const particlesJS = window.particlesJS
-const bootstrap = window.bootstrap
+const particlesJS = window.particlesJS // Declare particlesJS variable
+const bootstrap = window.bootstrap // Declare bootstrap variable
 
 document.addEventListener("DOMContentLoaded", async () => {
   const loadingScreen = document.getElementById("loadingScreen")
@@ -95,18 +95,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     settings.categories.forEach((category) => {
       const categoryDiv = document.createElement("div")
-      categoryDiv.className = "api-category animate"
-
-      const categoryTitle = document.createElement("div")
-      categoryTitle.className = "api-category-header"
-      categoryTitle.innerHTML = `<span>${category.name}</span>`
-
-      categoryDiv.appendChild(categoryTitle)
-
+      categoryDiv.className = "api-category animate" // Added animate class
+      const categoryHeader = document.createElement("div")
+      categoryHeader.className = "api-category-header"
+      categoryHeader.innerHTML = `<span>${category.name}</span><i class="fas fa-chevron-down"></i>`
+      categoryDiv.appendChild(categoryHeader)
       const categoryBody = document.createElement("div")
       categoryBody.className = "api-category-content"
-      categoryBody.style.display = "grid"
-
+      categoryBody.style.display = "none"
       const sortedItems = category.items.sort((a, b) => a.name.localeCompare(b.name))
       sortedItems.forEach((item) => {
         const endpointCard = document.createElement("div")
@@ -115,14 +111,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         endpointCard.dataset.apiName = item.name
         endpointCard.dataset.apiDesc = item.desc
         endpointCard.dataset.apiInnerDesc = item.innerDesc || ""
-        endpointCard.innerHTML = `<span class="method-badge">GET</span><div class="endpoint-text"><span class="endpoint-name">${item.name}</span></div><span class="arrow-icon">»</span>`
+        endpointCard.innerHTML = `
+<div class="endpoint-left">
+    <span class="method-badge">GET</span>
+    <div class="endpoint-info">
+        <div class="endpoint-name">${item.name}</div>
+        <div class="endpoint-path">${item.path}</div>
+        <div class="endpoint-desc">${item.desc}</div>
+    </div>
+</div>
+
+<div class="endpoint-right">
+    <button class="btn btn-execute">Execute</button>
+</div>
+`
         categoryBody.appendChild(endpointCard)
       })
-
       categoryDiv.appendChild(categoryBody)
       apiContent.appendChild(categoryDiv)
 
       observer.observe(categoryDiv)
+
+      categoryHeader.addEventListener("click", () => {
+        categoryBody.style.display = categoryBody.style.display === "none" ? "grid" : "none"
+        categoryHeader.classList.toggle("collapsed")
+        categoryHeader.querySelector(".fas").classList.toggle("fa-chevron-up")
+        categoryHeader.querySelector(".fas").classList.toggle("fa-chevron-down")
+      })
     })
 
     const searchInput = document.getElementById("searchInput")
@@ -139,6 +154,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (visibleItems.length > 0) {
           categoryDiv.style.display = ""
           categoryBody.style.display = "grid"
+          categoryDiv.querySelector(".api-category-header").classList.remove("collapsed")
+          categoryDiv.querySelector(".api-category-header .fas").classList.replace("fa-chevron-down", "fa-chevron-up")
         } else {
           categoryDiv.style.display = "none"
         }
@@ -146,11 +163,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
 
     document.addEventListener("click", (event) => {
-      if (!event.target.closest(".api-endpoint-card")) return
+      if (!event.target.classList.contains("btn-execute")) return
       const card = event.target.closest(".api-endpoint-card")
       const { apiPath, apiName, apiDesc, apiInnerDesc } = card.dataset
       const modal = new bootstrap.Modal(document.getElementById("apiResponseModal"))
-
       const modalRefs = {
         label: document.getElementById("apiResponseModalLabel"),
         desc: document.getElementById("apiResponseModalDesc"),
@@ -160,19 +176,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         submitBtn: document.getElementById("submitQueryBtn"),
         clearBtn: document.getElementById("clearQueryBtn"),
       }
-
       modalRefs.label.textContent = apiName
       modalRefs.desc.textContent = apiDesc
       modalRefs.modalApiDescription.textContent = apiDesc
       modalRefs.modalEndpointPath.textContent = apiPath.split("?")[0]
       modalRefs.queryInputContainer.innerHTML = ""
-
       document.getElementById("apiCurlContent").textContent = ""
       document.getElementById("apiRequestUrlContent").textContent = ""
       document.getElementById("apiResponseCode").textContent = ""
       document.getElementById("apiResponseBody").innerHTML = ""
       document.getElementById("apiResponseHeaders").textContent = ""
-
       document.querySelector(".tab-button[data-tab='parameters']").click()
       document.querySelector(".response-tab-button[data-response-tab='code']").click()
 
@@ -180,19 +193,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       const params = new URLSearchParams(apiPath.split("?")[1])
       let currentParams = {}
 
+      // --- PERUBAHAN LOGIKA DI SINI ---
+      // Tombol Execute selalu muncul.
       modalRefs.submitBtn.style.display = "inline-block"
+      // Tombol Clear disembunyikan secara default.
       modalRefs.clearBtn.style.display = "none"
 
       if (params.toString()) {
+        // KASUS 1: JIKA ENDPOINT PUNYA PARAMETER
+
+        // Tampilkan tombol Clear
         modalRefs.clearBtn.style.display = "inline-block"
 
         const paramContainer = document.createElement("div")
         paramContainer.className = "param-container"
-
         params.forEach((_, param) => {
           const paramGroup = document.createElement("div")
           paramGroup.className = "param-group"
-          paramGroup.innerHTML = `<label>${param} *</label><input type="text" class="form-control" data-param="${param}">`
+          paramGroup.innerHTML = `<label>${param.charAt(0).toUpperCase() + param.slice(1)} <span class="required-star">*</span> <span class="param-type">string (query)</span></label><input type="text" class="form-control" placeholder="Enter ${param}..." data-param="${param}" required><p class="param-description">Masukkan ${param}</p>`
           paramGroup.querySelector("input").addEventListener("input", (e) => {
             currentParams[param] = e.target.value.trim()
             updateCurlAndRequestUrl(baseApiUrl, currentParams)
@@ -200,17 +218,33 @@ document.addEventListener("DOMContentLoaded", async () => {
           paramContainer.appendChild(paramGroup)
         })
 
+        if (apiInnerDesc) {
+          const innerDescDiv = document.createElement("div")
+          innerDescDiv.className = "text-muted mt-3"
+          innerDescDiv.style.fontSize = "0.875rem"
+          innerDescDiv.innerHTML = apiInnerDesc.replace(/\n/g, "<br>")
+          paramContainer.appendChild(innerDescDiv)
+        }
+
         modalRefs.queryInputContainer.appendChild(paramContainer)
         updateCurlAndRequestUrl(baseApiUrl, currentParams)
 
+        // Onclick untuk Execute dengan validasi
         modalRefs.submitBtn.onclick = async () => {
           const newParams = new URLSearchParams()
+          let isValid = true
           modalRefs.queryInputContainer.querySelectorAll("input").forEach((input) => {
-            if (input.value.trim()) {
+            if (!input.value.trim()) {
+              isValid = false
+              input.classList.add("is-invalid")
+            } else {
+              input.classList.remove("is-invalid")
               newParams.append(input.dataset.param, input.value.trim())
             }
           })
-          handleApiRequest(`${baseApiUrl}?${newParams.toString()}`, apiName)
+          if (isValid) {
+            handleApiRequest(`${baseApiUrl}?${newParams.toString()}`, apiName)
+          }
         }
 
         modalRefs.clearBtn.onclick = () => {
@@ -219,7 +253,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           updateCurlAndRequestUrl(baseApiUrl, currentParams)
         }
       } else {
+        // KASUS 2: JIKA ENDPOINT TIDAK PUNYA PARAMETER
         updateCurlAndRequestUrl(baseApiUrl, {})
+
+        // Onclick untuk Execute tanpa validasi, langsung panggil API
         modalRefs.submitBtn.onclick = async () => {
           handleApiRequest(baseApiUrl, apiName)
         }
@@ -228,37 +265,58 @@ document.addEventListener("DOMContentLoaded", async () => {
       modal.show()
     })
 
-    // ✅ FIXED TAB BUTTONS
-    document.querySelectorAll(".tab-button").forEach((button) => {
+    document.querySelectorAll(".tab-button, .response-tab-button").forEach((button) => {
       button.addEventListener("click", function () {
-
-        document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"))
+        const isMainTab = this.classList.contains("tab-button")
+        const groupClass = isMainTab ? "tab-button" : "response-tab-button"
+        const paneClass = isMainTab ? ".tab-pane" : ".response-tab-pane"
+        this.parentElement.querySelectorAll(`.${groupClass}`).forEach((btn) => btn.classList.remove("active"))
         this.classList.add("active")
-
-        document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"))
-        const target = document.getElementById(this.dataset.tab + "Tab")
-        if (target) target.classList.add("active")
-
+        const tabId = isMainTab
+          ? `${this.dataset.tab}Tab`
+          : `response${this.dataset.responseTab.charAt(0).toUpperCase() + this.dataset.responseTab.slice(1)}Tab`
+        const parentPane = this.closest(".tab-content-wrapper") || this.closest(".modal-body")
+        if (parentPane) {
+          parentPane.querySelectorAll(paneClass).forEach((pane) => pane.classList.remove("active"))
+          const activePane = document.getElementById(tabId)
+          if (activePane) activePane.classList.add("active")
+        }
       })
     })
+    document
+      .getElementById("copyCurl")
+      .addEventListener("click", () =>
+        copyToClipboard(document.getElementById("apiCurlContent").textContent, "Curl command copied!"),
+      )
+    document
+      .getElementById("copyRequestUrl")
+      .addEventListener("click", () =>
+        copyToClipboard(document.getElementById("apiRequestUrlContent").textContent, "Request URL copied!"),
+      )
+    document.getElementById("copyResponseBody").addEventListener("click", () => {
+      const responseBodyElement = document.getElementById("apiResponseBody")
+      let textToCopy = ""
 
-    document.querySelectorAll(".response-tab-button").forEach((button) => {
-      button.addEventListener("click", function () {
+      // Handle different content types
+      if (responseBodyElement.querySelector("img, audio, video")) {
+        // For media content, copy the API response as text
+        textToCopy = "Media content - use download button to save the file"
+      } else {
+        // For text/JSON content, copy the actual content
+        textToCopy = responseBodyElement.textContent || responseBodyElement.innerText
+      }
 
-        document.querySelectorAll(".response-tab-button").forEach(btn => btn.classList.remove("active"))
-        this.classList.add("active")
-
-        document.querySelectorAll(".response-tab-pane").forEach(pane => pane.classList.remove("active"))
-
-        const target = document.getElementById(
-          "response" + this.dataset.responseTab.charAt(0).toUpperCase() + this.dataset.responseTab.slice(1) + "Tab"
-        )
-
-        if (target) target.classList.add("active")
-
-      })
+      copyToClipboard(textToCopy, "Response body copied!")
     })
-
+    document.getElementById("downloadResponse").addEventListener("click", () => {
+      const responseText = document.getElementById("apiResponseBody").textContent
+      const blob = new Blob([responseText], { type: "application/json" })
+      const a = document.createElement("a")
+      a.href = URL.createObjectURL(blob)
+      a.download = "response.json"
+      a.click()
+      URL.revokeObjectURL(a.href)
+    })
   } catch (error) {
     console.error("Error loading settings:", error)
   } finally {
@@ -273,7 +331,55 @@ document.addEventListener("DOMContentLoaded", async () => {
 })
 
 function copyToClipboard(text, successMessage) {
-  navigator.clipboard.writeText(text)
+  navigator.clipboard
+    .writeText(text)
+    .then(() => showToast(successMessage, "success"))
+    .catch((err) => {
+      console.error("Could not copy text: ", err)
+      showToast("Failed to copy to clipboard", "error")
+    })
+}
+
+function showToast(message, type = "success") {
+  // Create toast container if it doesn't exist
+  let toastContainer = document.querySelector(".toast-container")
+  if (!toastContainer) {
+    toastContainer = document.createElement("div")
+    toastContainer.className = "toast-container"
+    document.body.appendChild(toastContainer)
+  }
+
+  // Create toast element
+  const toast = document.createElement("div")
+  toast.className = `toast ${type}`
+
+  const icon = type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"
+
+  toast.innerHTML = `
+    <i class="${icon} toast-icon"></i>
+    <span class="toast-message">${message}</span>
+    <button class="toast-close" onclick="this.parentElement.remove()">
+      <i class="fas fa-times"></i>
+    </button>
+  `
+
+  // Add toast to container
+  toastContainer.appendChild(toast)
+
+  // Trigger show animation
+  setTimeout(() => {
+    toast.classList.add("show")
+  }, 10)
+
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove("show")
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.remove()
+      }
+    }, 400)
+  }, 3000)
 }
 
 function updateCurlAndRequestUrl(baseApiUrl, params) {
@@ -284,6 +390,7 @@ function updateCurlAndRequestUrl(baseApiUrl, params) {
     `curl -X 'GET' \\\n  '${fullRequestUrl}' \\\n  -H 'accept: */*'`
 }
 
+// Fungsi untuk mengubah Blob menjadi Base64
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -299,27 +406,59 @@ async function handleApiRequest(apiUrl, apiName) {
   const apiResponseHeaders = document.getElementById("apiResponseHeaders")
 
   apiResponseCode.textContent = "Loading..."
-  apiResponseBody.innerHTML = "Loading..."
+  apiResponseBody.innerHTML =
+    '<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div>'
   apiResponseHeaders.textContent = "Loading..."
 
   document.querySelector(".tab-button[data-tab='responses']").click()
 
   try {
     const response = await fetch(apiUrl)
-
+    const headers = {}
+    response.headers.forEach((value, name) => {
+      headers[name] = value
+    })
     apiResponseCode.textContent = response.status
+    apiResponseHeaders.textContent = Object.entries(headers)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join("\n")
 
     const contentType = response.headers.get("Content-Type") || ""
 
-    if (contentType.includes("application/json")) {
-      const data = await response.json()
-      apiResponseBody.textContent = JSON.stringify(data, null, 2)
-    } else {
-      apiResponseBody.textContent = await response.text()
+    if (!response.ok) {
+      try {
+        const errorData = await response.json()
+        apiResponseBody.textContent = JSON.stringify(errorData, null, 2)
+      } catch (e) {
+        apiResponseBody.textContent = await response.text()
+      }
+      return
     }
 
+    // --- PERUBAHAN LOGIKA PREVIEW MEDIA ---
+    if (contentType.startsWith("image/") || contentType.startsWith("audio/") || contentType.startsWith("video/")) {
+      const blob = await response.blob()
+      const base64data = await blobToBase64(blob)
+
+      if (contentType.startsWith("image/")) {
+        apiResponseBody.innerHTML = `<img src="${base64data}" alt="${apiName}" style="max-width: 100%; border-radius: 8px;">`
+      } else if (contentType.startsWith("audio/")) {
+        apiResponseBody.innerHTML = `<audio controls src="${base64data}" style="width: 100%;"></audio>`
+      } else if (contentType.startsWith("video/")) {
+        apiResponseBody.innerHTML = `<video controls src="${base64data}" style="max-width: 100%; border-radius: 8px;"></video>`
+      }
+    } else if (contentType.includes("application/json")) {
+      const data = await response.json()
+      apiResponseBody.textContent = JSON.stringify(data, null, 2)
+    } else if (contentType.startsWith("text/")) {
+      apiResponseBody.textContent = await response.text()
+    } else {
+      apiResponseBody.textContent = "Preview for this content type is not available."
+    }
   } catch (error) {
     apiResponseCode.textContent = "Error"
-    apiResponseBody.textContent = error.message
+    apiResponseBody.textContent = `Network or other error occurred: ${error.message}`
+    apiResponseHeaders.textContent = "N/A"
   }
-        }
+                                                                          }
+                   
