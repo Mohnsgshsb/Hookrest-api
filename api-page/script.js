@@ -132,12 +132,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       observer.observe(categoryDiv)
 
-      categoryHeader.addEventListener("click", () => {
+      /*categoryHeader.addEventListener("click", () => {
         categoryBody.style.display = categoryBody.style.display === "none" ? "grid" : "none"
         categoryHeader.classList.toggle("collapsed")
         categoryHeader.querySelector(".fas").classList.toggle("fa-chevron-up")
         categoryHeader.querySelector(".fas").classList.toggle("fa-chevron-down")
-      })
+      })*/
+      categoryBody.style.display = "flex"
+categoryBody.style.flexDirection = "column"
     })
 
     const searchInput = document.getElementById("searchInput")
