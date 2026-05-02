@@ -7,11 +7,7 @@
 <title id="page"></title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -34,7 +30,7 @@
 </div>
 
 <div class="app-container">
-    <nav class="navbar navbar-expand-lg" id="navbar">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="#">
                 <div class="d-flex align-items-center">
@@ -45,123 +41,7 @@
         </div>
     </nav>
 
-    <!-- ====== HERO SECTION (جديد) ====== -->
-    <section class="hero" id="home">
-        <div class="hero-bg-media">
-            <img src="https://cdn.nekohime.site/file/Ga2m-Yxj.jpeg" alt="Dashboard Preview">
-        </div>
-        <div class="hero-overlay"></div>
-
-        <div class="hero-content" data-aos="fade-up" data-aos-duration="1000">
-            <div class="badge-new">
-                <span>Terbaru</span> Versi <span id="heroVersion">1.0.0</span> sudah tersedia untuk publik
-            </div>
-            <h1>Layanan <span>Rest </span>API</h1>
-            <p>Satu platform API untuk jutaan pengguna. Untuk mempermudah pengembangan project anda.</p>
-
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <a href="#api-section" class="btn-primary-hero" style="padding: 18px 40px; font-size: 16px;">
-                    <i class="bi bi-play-fill"></i> Mulai Sekarang Juga
-                </a>
-            </div>
-
-            <div class="stats-container">
-                <div class="stat-card">
-                    <h3 id="api-total" class="skeleton">0</h3>
-                    <p>Total Endpoint</p>
-                </div>
-                <div class="stat-card">
-                    <h3>99.9<small>%</small></h3>
-                    <p>Uptime Garansi</p>
-                </div>
-                <div class="stat-card">
-                    <h3>< 30<small>ms</small></h3>
-                    <p>Latensi Rata-rata</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ====== FEATURES SECTION (جديد) ====== -->
-    <section class="section-features" id="features">
-        <div class="section-title" data-aos="fade-up">
-            <p style="color: var(--primary-color); font-weight: 800; text-transform: uppercase; letter-spacing: 2px;">Kenapa Kami?</p>
-            <h2>Standar Keamanan & Kecepatan Kelas Anomali</h2>
-        </div>
-
-        <div class="grid-features">
-            <div class="card-feature" data-aos="fade-up" data-aos-delay="100">
-                <div class="icon"><i class="bi bi-lightning-charge-fill"></i></div>
-                <h3>Super Cepat</h3>
-                <p>Didukung oleh akselerasi hardware dan edge computing untuk pengiriman data secepat kilat.</p>
-            </div>
-            <div class="card-feature" data-aos="fade-up" data-aos-delay="200">
-                <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
-                <h3>Keamanan Berlapis</h3>
-                <p>Enkripsi end-to-end dan proteksi DDoS tingkat lanjut menjaga data Anda tetap aman.</p>
-            </div>
-            <div class="card-feature" data-aos="fade-up" data-aos-delay="300">
-                <div class="icon"><i class="bi bi-cpu-fill"></i></div>
-                <h3>Auto-Scaling</h3>
-                <p>Server kami otomatis menyesuaikan kapasitas saat traffic Anda melonjak tinggi.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- ====== CODE PREVIEW SECTION (جديد) ====== -->
-    <section class="section-code">
-        <div class="code-preview-section" data-aos="zoom-in">
-            <div class="code-info">
-                <h2 id="owner-name" class="skeleton">Developer Engine</h2>
-                <p style="color: #94a3b8; margin-bottom: 30px; font-size: 1.1rem;">
-                    Integrasikan API kami hanya dengan beberapa baris kode. Mendukung berbagai bahasa pemrograman populer.
-                </p>
-                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                    <i class="bi bi-check-circle-fill" style="color: var(--accent);"></i>
-                    <span style="color: white;">Respon format JSON standar</span>
-                </div>
-                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                    <i class="bi bi-check-circle-fill" style="color: var(--accent);"></i>
-                    <span style="color: white;">Dokumentasi lengkap & jelas</span>
-                </div>
-                <div style="display: flex; gap: 15px;">
-                    <i class="bi bi-check-circle-fill" style="color: var(--accent);"></i>
-                    <span style="color: white;">Support 24/7</span>
-                </div>
-            </div>
-
-            <div class="code-window">
-                <div class="code-header">
-                    <div class="dot dot-red"></div>
-                    <div class="dot dot-yellow"></div>
-                    <div class="dot dot-green"></div>
-                </div>
-                <div class="code-content">
-                    <code>
-                        <span class="c-get">GET</span> <span class="c-url">/api/info</span><br><br>
-                        {<br>
-                        &nbsp;&nbsp;<span class="c-key">"status"</span>: <span class="c-val">true</span>,<br>
-                        &nbsp;&nbsp;<span class="c-key">"code"</span>: <span class="c-val">200</span>,<br>
-                        &nbsp;&nbsp;<span class="c-key">"owner"</span>: <span class="c-val" id="codeOwner">"Rerezz Official"</span>,<br>
-                        &nbsp;&nbsp;<span class="c-key">"version"</span>: <span class="c-val" id="codeVersion">"1.0.0"</span>,<br>
-                        &nbsp;&nbsp;<span class="c-key">"total_Api"</span>: <span class="c-val" id="codeTotal">9</span>,<br>
-                        &nbsp;&nbsp;<span class="c-key">"last_update"</span>: <span class="c-val">"19 Februari 2026"</span>,<br>
-                        &nbsp;&nbsp;<span class="c-key">"message"</span>: <span class="c-val" id="codeMessage">"Layanan Api Siap Di Gunakan"</span>,<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="c-key">"tqto"</span>: {<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-key">"1"</span>: <span class="c-val">"Allah SWT"</span>,<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-key">"2"</span>: <span class="c-val">"My parents"</span>,<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-key">"3"</span>: <span class="c-val">"My Friend"</span>,<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-key">"4"</span>: <span class="c-val">"And all of you who contributed to making this API"</span><br>
-                        &nbsp;&nbsp;}<br>
-                        }
-                    </code>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ====== API SECTION (اللي عندك أصلاً) ====== -->
-    <main class="container my-4" id="api-section">
+    <main class="container my-4">
         <!-- Added animate class to header elements -->
         <div class="api-header">
             <h1 id="name" class="animate" style="animation-delay: 0.2s;"></h1>
@@ -289,8 +169,6 @@
 <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script src="/script.js"></script>
 </body>
-                </html>
-    
+</html>
