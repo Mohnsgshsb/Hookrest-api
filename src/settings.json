@@ -10,7 +10,7 @@
     "imageSize": {
       "mobile": "50%",
       "tablet": "40%",
-      "desktop": "40%
+      "desktop": "40%"
     }
   },
   "apiSettings": {
