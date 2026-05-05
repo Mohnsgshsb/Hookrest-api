@@ -1,5 +1,4 @@
 const BASEURL = window.location.origin
-const bootstrap = window.bootstrap
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -38,6 +37,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return "fa-layer-group"
   }
 
+  // =========================
+  // LOAD SETTINGS
+  // =========================
   const settings = await fetch("/src/settings.json").then(r => r.json())
 
   // =========================
@@ -46,11 +48,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   settings.categories.forEach((cat, index) => {
     const item = document.createElement("div")
     item.className = "sidebar-item"
+
     item.innerHTML = `
       <i class="fas ${getIcon(cat.name)}"></i>
       <span>${cat.name}</span>
     `
-    item.onclick = () => window.location.href = `?category=${index}`
+
+    item.onclick = () => {
+      window.location.href = `?category=${index}`
+    }
+
     sidebar.appendChild(item)
   })
 
@@ -73,34 +80,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
 
     let html = `
-    <div class="dashboard">
+    <h2 class="dash-title">📊 API Statistics Dashboard</h2>
 
-      <h2 class="dash-title">📊 API Statistics Dashboard</h2>
+    <div class="stats-grid">
 
-      <div class="stats-grid">
-
-        <div class="stat-card">
-          <i class="fas fa-code"></i>
-          <h4>Total Endpoints</h4>
-          <p>${totalEndpoints}</p>
-        </div>
-
-        <div class="stat-card">
-          <i class="fas fa-layer-group"></i>
-          <h4>Total Sections</h4>
-          <p>${sectionsCount}</p>
-        </div>
-
-        <div class="stat-card">
-          <i class="fas fa-crown"></i>
-          <h4>Dominant Section</h4>
-          <p>${dominant.name}</p>
-        </div>
-
+      <div class="stat-card">
+        <h4>Total Endpoints</h4>
+        <p>${totalEndpoints}</p>
       </div>
 
-      <h3 class="dist-title">📊 Sections Distribution</h3>
-      <div class="dist-wrapper">
+      <div class="stat-card">
+        <h4>Total Sections</h4>
+        <p>${sectionsCount}</p>
+      </div>
+
+      <div class="stat-card">
+        <h4>Dominant Section</h4>
+        <p>${dominant.name}</p>
+      </div>
+
+    </div>
+
+    <h3 class="dist-title">📊 Sections Distribution</h3>
+    <div class="dist-wrapper">
     `
 
     settings.categories.forEach(cat => {
@@ -120,35 +122,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
 
     html += `
-      </div>
+    </div>
 
-      <!-- PROFILE -->
-      <div class="home-card center">
-        <img src="/src/icon.png" class="profile-img">
-        <h2>Terbo API</h2>
-        <div class="profile-buttons">
-          <span>📞 +20 103 452 6368</span>
-          <span>💬 WhatsApp</span>
-          <span>💻 Developer</span>
-          <span>🔥 APIs</span>
-        </div>
-      </div>
-
-      <!-- LOGO -->
-      <div class="home-card center">
-        <img src="/src/icon.png" class="api-logo">
-        <h2>Terbo API</h2>
-        <p>Best API Services For Developers 🚀</p>
-      </div>
-
-      <!-- EXAMPLE -->
-      <div class="home-card">
-        <h3>⚡ Example API</h3>
-        <div class="code-box">
-<pre>${BASEURL}/api/gpt?text=hello</pre>
-        </div>
-      </div>
-
+    <div class="home-card center">
+      <img src="/src/icon.png" class="profile-img">
+      <h2>Terbo API</h2>
+      <p>Best API Services 🚀</p>
     </div>
     `
 
@@ -159,6 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 📂 CATEGORY PAGE
   // =========================
   else {
+
     const category = settings.categories[selectedCategoryIndex]
 
     apiContent.innerHTML = `<h2>${category.name}</h2>`
@@ -167,18 +147,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     container.className = "api-category-content"
 
     category.items.forEach(item => {
+
       const card = document.createElement("div")
       card.className = "api-endpoint-card"
 
       card.innerHTML = `
-        <div class="card-top">
-          <span class="method-badge">GET</span>
-          <span class="endpoint-path">${item.path}</span>
+        <div class="api-card-left">
+          <span class="method">GET</span>
         </div>
 
-        <div class="card-body">
+        <div class="api-card-body">
           <h4>${item.name}</h4>
           <p>${item.desc}</p>
+          <code>${item.path}</code>
         </div>
 
         <button class="try-btn">Try It</button>
@@ -186,12 +167,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // ✅ TRY IT مباشر
       card.querySelector(".try-btn").onclick = () => {
+
         let url = BASEURL + item.path
 
-        if (url.includes("url=")) url += "https://tiktok.com/@test/video/123"
-        else if (url.includes("text=")) url += "hello"
-        else if (url.includes("q=")) url += "test"
-        else if (url.includes("prompt=")) url += "anime"
+        if (url.includes("url=")) {
+          url += "https://tiktok.com/@test/video/123"
+        } else if (url.includes("text=")) {
+          url += "hello"
+        } else if (url.includes("q=")) {
+          url += "test"
+        } else if (url.includes("prompt=")) {
+          url += "anime"
+        }
 
         window.open(url, "_blank")
       }
