@@ -10,7 +10,7 @@
     "imageSize": {
       "mobile": "50%",
       "tablet": "40%",
-      "desktop": "40%"
+      "desktop": "40%
     }
   },
   "apiSettings": {
@@ -28,7 +28,7 @@
   ],
   "categories": [
     {
-      "name": "〘 🕷️ ┊AI┊🩸 〙",
+      "name": "AI",
       "items": [ 
       {
   "name": "🩸┊『 TTS 』↶",
@@ -48,7 +48,7 @@
       ]
     },
     {
-      "name": "〘 🕷️ ┊Islami┊🩸 〙",
+      "name": "Islami",
       "items": [
         {
           "name": "『 Ahades 』",
@@ -58,7 +58,7 @@
       ]
     },
     {
-      "name": "〘 🕷️ ┊Tools┊🩸 〙",
+      "name": "Tools",
       "items": [
         {
           "name": "『 Edit-Img 』",
@@ -83,7 +83,7 @@
       ]
     },
     {
-  "name": "〘 🕷️ ┊Anime Mods┊🩸 〙",
+  "name": "Anime Mods",
   "items": [
     { "name": "Akira", "mode": "akira", "desc": "صور Akira عشوائية", "path": "/api/anime/akira" },
     { "name": "Akiyama", "mode": "akiyama", "desc": "صور Akiyama عشوائية", "path": "/api/anime/akiyama" },
@@ -132,7 +132,7 @@
   ]
 },
     {
-      "name": "〘 🕷️ ┊Search Tools┊🩸 〙",
+      "name": "Search Tools",
       "items": [
         {
           "name": "〘 🕷️ ┊YouTube┊🩸 〙",
@@ -157,7 +157,7 @@
       ]
     },
     {
-      "name": "〘 🕷️ ┊Downloader┊🩸 〙",
+      "name": "Downloader",
       "items": [
         {
           "name": "Ytmp3",
@@ -218,7 +218,7 @@
       ]
     },
     {
-      "name": "〘 🕷️ ┊Info┊🩸 〙",
+      "name": "Info",
       "items": [
         {
           "name": "Jadwal tv",
@@ -233,7 +233,7 @@
       ]
     },
     {
-      "name": "〘 🕷️ ┊Status┊🩸 〙",
+      "name": "Status",
       "items": [
         {
           "name": "Info status",
