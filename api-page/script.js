@@ -8,20 +8,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   body.classList.add("no-scroll")
   document.body.classList.add("dark-mode")
 
-  // زرار المينيو
-  const menuBtn = document.getElementById("menuBtn")
-  const sidebar = document.getElementById("sidebar")
-  const categoryList = document.getElementById("categoryList")
+  // 🔥 إنشاء زرار ☰ تلقائي
+  const menuBtn = document.createElement("button")
+  menuBtn.innerHTML = "☰"
+  menuBtn.style.position = "fixed"
+  menuBtn.style.top = "15px"
+  menuBtn.style.left = "15px"
+  menuBtn.style.zIndex = "999"
+  menuBtn.style.fontSize = "22px"
+  menuBtn.style.background = "transparent"
+  menuBtn.style.border = "none"
+  menuBtn.style.color = "#fff"
+  document.body.appendChild(menuBtn)
 
-  if (menuBtn) {
-    menuBtn.onclick = () => {
-      sidebar.classList.toggle("active")
-    }
+  // 🔥 إنشاء Sidebar
+  const sidebar = document.createElement("div")
+  sidebar.style.position = "fixed"
+  sidebar.style.top = "0"
+  sidebar.style.left = "-260px"
+  sidebar.style.width = "260px"
+  sidebar.style.height = "100%"
+  sidebar.style.background = "#111"
+  sidebar.style.padding = "20px"
+  sidebar.style.transition = "0.3s"
+  sidebar.style.zIndex = "998"
+  sidebar.style.overflowY = "auto"
+  document.body.appendChild(sidebar)
+
+  menuBtn.onclick = () => {
+    sidebar.style.left = sidebar.style.left === "0px" ? "-260px" : "0px"
   }
 
   particlesJS("particles-js", {
     particles: {
-      number: { value: 80, density: { enable: true, value_area: 800 } },
+      number: { value: 80 },
       color: { value: "#6c5ce7" },
       shape: { type: "circle" },
       opacity: { value: 0.5 },
@@ -42,14 +62,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const apiContent = document.getElementById("apiContent")
 
-    // 🔥 عرض الكاتيجوريز في السايد بار
+    // 🔥 إضافة الكاتيجوريز في السايد بار
     settings.categories.forEach((cat, index) => {
-      const div = document.createElement("div")
-      div.textContent = cat.name
-      div.onclick = () => {
+      const item = document.createElement("div")
+      item.textContent = cat.name
+      item.style.margin = "10px 0"
+      item.style.cursor = "pointer"
+      item.style.color = "#fff"
+
+      item.onclick = () => {
         window.location.href = `?category=${index}`
       }
-      categoryList.appendChild(div)
+
+      sidebar.appendChild(item)
     })
 
     // 🔥 تحديد الكاتيجوري من الرابط
@@ -59,12 +84,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (selectedCategoryIndex !== null) {
       const category = settings.categories[selectedCategoryIndex]
 
-      const categoryDiv = document.createElement("div")
-      categoryDiv.className = "api-category"
-
       const title = document.createElement("h2")
       title.textContent = category.name
-      categoryDiv.appendChild(title)
+      apiContent.appendChild(title)
 
       const container = document.createElement("div")
       container.className = "api-category-content"
@@ -73,33 +95,44 @@ document.addEventListener("DOMContentLoaded", async () => {
         const card = document.createElement("div")
         card.className = "api-endpoint-card"
 
+        card.dataset.apiPath = item.path
+        card.dataset.apiName = item.name
+        card.dataset.apiDesc = item.desc
+
         card.innerHTML = `
           <span class="method-badge">GET</span>
           <div class="endpoint-text">
-            <span>${item.name}</span>
-            <small>${item.desc}</small>
+            <span class="endpoint-path">${item.path.split("?")[0]}</span>
+            <span class="endpoint-name">${item.name}</span>
           </div>
+          <i class="fas fa-chevron-down"></i>
         `
-
-        card.onclick = () => {
-          const modal = new bootstrap.Modal(document.getElementById("apiResponseModal"))
-
-          document.getElementById("apiResponseModalLabel").textContent = item.name
-          document.getElementById("apiResponseModalDesc").textContent = item.desc
-          document.getElementById("modalEndpointPath").textContent = item.path.split("?")[0]
-
-          modal.show()
-        }
 
         container.appendChild(card)
       })
 
-      categoryDiv.appendChild(container)
-      apiContent.appendChild(categoryDiv)
+      apiContent.appendChild(container)
 
     } else {
       apiContent.innerHTML = "<h2>☰ اختار قسم من القائمة</h2>"
     }
+
+    // 🔥 نفس المودال القديم بدون تعديل
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".api-endpoint-card")) return
+
+      const card = event.target.closest(".api-endpoint-card")
+      const { apiPath, apiName, apiDesc } = card.dataset
+
+      const modal = new bootstrap.Modal(document.getElementById("apiResponseModal"))
+
+      document.getElementById("apiResponseModalLabel").textContent = apiName
+      document.getElementById("apiResponseModalDesc").textContent = apiDesc
+      document.getElementById("modalEndpointPath").textContent = apiPath.split("?")[0]
+      document.getElementById("modalApiDescription").textContent = apiDesc
+
+      modal.show()
+    })
 
   } catch (err) {
     console.error(err)
