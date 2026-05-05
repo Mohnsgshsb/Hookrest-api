@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     })
 
-    apiContent.innerHTML = `
+    let html = `
     <h2>📊 API Dashboard</h2>
 
     <div class="stats-grid">
@@ -95,8 +95,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         <p>${dominant.name}</p>
       </div>
     </div>
+    `
 
-    <!-- 👤 PROFILE -->
+    // =========================
+    // 📊 DISTRIBUTION
+    // =========================
+    html += `<h3>📊 Sections Distribution</h3>`
+
+    settings.categories.forEach(cat => {
+      const percent = ((cat.items.length / totalEndpoints) * 100).toFixed(0)
+
+      html += `
+      <div class="dist-item">
+        <div class="dist-head">
+          <span>${cat.name}</span>
+          <span>${cat.items.length} (${percent}%)</span>
+        </div>
+        <div class="progress-bar-custom">
+          <div class="progress-fill" style="width:${percent}%"></div>
+        </div>
+      </div>
+      `
+    })
+
+    // PROFILE + باقي شغلك زي ما هو
+    html += `
     <div class="home-card center">
       <img src="/src/icon.png" class="profile-img">
       <h2>Terbo API</h2>
@@ -109,14 +132,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       </div>
     </div>
 
-    <!-- 🔥 LOGO -->
     <div class="home-card center">
       <img src="/src/icon.png" class="api-logo">
       <h2>Terbo API</h2>
       <p>Best API Services For Developers 🚀</p>
     </div>
 
-    <!-- 📦 EXAMPLE -->
     <div class="home-card">
       <h3>⚡ Example API</h3>
       <div class="code-box">
@@ -131,12 +152,13 @@ ${BASEURL}/api/gpt?text=hello
       </div>
     </div>
 
-    <!-- 👋 WELCOME -->
     <div class="home-card center">
       <h2>Welcome 👋</h2>
       <p>Choose any section from menu and start using APIs 🔥</p>
     </div>
     `
+
+    apiContent.innerHTML = html
   }
 
   // =========================
@@ -152,19 +174,28 @@ ${BASEURL}/api/gpt?text=hello
 
     category.items.forEach(item => {
       const card = document.createElement("div")
-      card.className = "api-endpoint-card"
-
-      card.dataset.apiPath = item.path
-      card.dataset.apiName = item.name
-      card.dataset.apiDesc = item.desc
+      card.className = "api-card"
 
       card.innerHTML = `
-        <span class="method-badge">GET</span>
-        <div class="endpoint-text">
-          <span class="endpoint-path">${item.path}</span>
-          <span>${item.name}</span>
+        <div class="api-card-left">
+          <span class="method-badge">GET</span>
+        </div>
+
+        <div class="api-card-body">
+          <h4>${item.name}</h4>
+          <p>${item.desc}</p>
+          <code>${item.path}</code>
+        </div>
+
+        <div class="api-card-right">
+          <button class="try-btn">Try it 🚀</button>
         </div>
       `
+
+      // زرار Try
+      card.querySelector(".try-btn").onclick = () => {
+        openModal(item)
+      }
 
       container.appendChild(card)
     })
@@ -173,24 +204,26 @@ ${BASEURL}/api/gpt?text=hello
   }
 
   // =========================
-  // 🚀 EXECUTE
+  // 🪟 MODAL FUNCTION
   // =========================
-  document.addEventListener("click", async (e) => {
-    const card = e.target.closest(".api-endpoint-card")
-    if (!card) return
-
-    const url = BASEURL + card.dataset.apiPath
+  function openModal(item) {
     const modal = new bootstrap.Modal(document.getElementById("apiResponseModal"))
 
-    document.getElementById("apiResponseModalLabel").textContent = card.dataset.apiName
+    document.getElementById("apiResponseModalLabel").textContent = item.name
+    document.getElementById("apiResponseModalDesc").textContent = item.desc
+    document.getElementById("modalEndpointPath").textContent = item.path
 
     document.getElementById("submitQueryBtn").onclick = async () => {
-      const res = await fetch(url)
-      const text = await res.text()
-      document.getElementById("apiResponseBody").textContent = text
+      try {
+        const res = await fetch(BASEURL + item.path)
+        const text = await res.text()
+        document.getElementById("apiResponseBody").textContent = text
+      } catch (err) {
+        document.getElementById("apiResponseBody").textContent = "Error ❌"
+      }
     }
 
     modal.show()
-  })
+  }
 
 })
