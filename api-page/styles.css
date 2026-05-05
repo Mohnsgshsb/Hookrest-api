@@ -33,69 +33,84 @@
   background: var(--bg-color);
 }
 /* =========================
-🔥 SIDEBAR GLASS
+🌌 GLOBAL
 ========================= */
-.sidebar {
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(255,255,255,0.1);
+body {
+  background: #0f172a;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
 }
 
-/* عناصر السايدبار */
+h2, h3, h4 {
+  color: #fff;
+}
+
+/* =========================
+☰ MENU BUTTON
+========================= */
+.menu-btn {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  z-index: 999;
+  cursor: pointer;
+}
+
+/* =========================
+📂 SIDEBAR
+========================= */
+.sidebar {
+  position: fixed;
+  left: -260px;
+  top: 0;
+  width: 260px;
+  height: 100%;
+  padding: 70px 15px;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+  transition: 0.3s;
+  z-index: 998;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
 .sidebar div {
-  margin-bottom: 10px;
-  padding: 10px 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
   border-radius: 12px;
+
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255,255,255,0.05);
+
   transition: 0.3s;
 }
 
 .sidebar div:hover {
-  background: rgba(108,92,231,0.3);
-  transform: translateX(5px);
+  background: rgba(108,92,231,0.25);
+  box-shadow: 0 0 12px rgba(108,92,231,0.6);
+  transform: translateX(6px);
 }
 
 /* =========================
-🔥 API CARDS
+📊 DASHBOARD
 ========================= */
-.api-category-content {
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px; /* المسافات */
+  grid-template-columns: repeat(auto-fit,minmax(120px,1fr));
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.api-endpoint-card {
-  background: rgba(255,255,255,0.05);
-  border-radius: 12px;
-  padding: 12px;
-  transition: 0.2s;
-  cursor: pointer;
-}
-
-.api-endpoint-card:hover {
-  transform: translateY(-5px);
-  background: rgba(108,92,231,0.2);
-}
-
-/* =========================
-🔥 METHOD BADGE
-========================= */
-.method-badge {
-  background: linear-gradient(45deg, #a29bfe, #6c5ce7);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #fff;
-  margin-bottom: 5px;
-  display: inline-block;
-}
-
-/* =========================
-🔥 DASHBOARD CARDS
-========================= */
 .stat-card {
   background: rgba(255,255,255,0.05);
   padding: 15px;
@@ -107,38 +122,152 @@
 
 .stat-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 0 25px rgba(108,92,231,0.6);
+  box-shadow: 0 0 25px rgba(108,92,231,0.7);
 }
 
 .stat-card h4 {
-  font-size: 14px;
+  font-size: 13px;
   color: #aaa;
 }
 
 .stat-card p {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: bold;
-  color: #fff;
 }
 
 /* =========================
-🔥 PROGRESS BARS
+🏠 HOME CARDS
 ========================= */
-.progress-bar-custom {
-  background: rgba(255,255,255,0.1);
-  border-radius: 10px;
-  overflow: hidden;
-  height: 8px;
+.home-card {
+  background: rgba(255,255,255,0.04);
+  border-radius: 18px;
+  padding: 20px;
+  margin-top: 20px;
+
+  border: 1px solid rgba(108,92,231,0.4);
+  box-shadow: 0 0 20px rgba(108,92,231,0.3);
+
+  transition: 0.3s;
 }
 
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #a29bfe, #6c5ce7);
-  transition: width 0.5s;
+.home-card:hover {
+  box-shadow: 0 0 35px rgba(108,92,231,0.8);
+  transform: translateY(-5px);
+}
+
+.home-card.center {
+  text-align: center;
+}
+
+.profile-img {
+  width: 80px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.api-logo {
+  width: 100px;
+  margin-bottom: 10px;
+}
+
+/* buttons profile */
+.profile-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.profile-buttons span {
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(108,92,231,0.2);
+  border: 1px solid rgba(108,92,231,0.4);
+  font-size: 12px;
 }
 
 /* =========================
-🔥 SCROLLBAR
+📦 CODE BOX
+========================= */
+.code-box {
+  background: #000;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  overflow-x: auto;
+}
+
+/* =========================
+📂 API CARDS
+========================= */
+.api-category-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.api-endpoint-card {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border-radius: 14px;
+  padding: 14px;
+
+  border: 1px solid rgba(108,92,231,0.3);
+  box-shadow: 0 0 10px rgba(108,92,231,0.3);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.api-endpoint-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 20px rgba(108,92,231,0.7);
+  background: rgba(108,92,231,0.15);
+}
+
+.endpoint-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.endpoint-path {
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* =========================
+🏷️ METHOD
+========================= */
+.method-badge {
+  background: linear-gradient(45deg,#a29bfe,#6c5ce7);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* =========================
+🪟 MODAL (مهم)
+========================= */
+.modal-content {
+  background: #0f172a;
+  color: #fff;
+  border-radius: 15px;
+}
+
+.code-block {
+  background: #000;
+  padding: 10px;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+/* =========================
+🖱️ SCROLLBAR
 ========================= */
 ::-webkit-scrollbar {
   width: 6px;
@@ -147,18 +276,7 @@
 ::-webkit-scrollbar-thumb {
   background: #6c5ce7;
   border-radius: 10px;
-}
-
-/* =========================
-🔥 TEXT
-========================= */
-body {
-  color: #fff;
-}
-
-h2, h3 {
-  color: #fff;
-}
+  }
 header {
     position: fixed;
     top: 0;
