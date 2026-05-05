@@ -3,147 +3,191 @@ const bootstrap = window.bootstrap
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  const apiContent = document.getElementById("apiContent")
+  const apiContent = document.getElementById("all-ai")
+  const sidebar = document.getElementById("sidebar")
+  const toggleSidebar = document.getElementById("toggle-sidebar")
+  const threeDots = document.getElementById("three-dots")
+  const poupMenu = document.getElementById("poup-menu")
+  const dynamicButtons = document.getElementById("dynamic-buttons")
 
-  // ☰ MENU
-  const menuBtn = document.createElement("button")
-  menuBtn.innerHTML = "☰"
-  menuBtn.className = "menu-btn"
-  document.body.appendChild(menuBtn)
+  const modal = document.getElementById("test-modal")
+  const modalBody = document.getElementById("modal-body")
+  const modalTitle = document.getElementById("modal-title")
+  const closeModal = document.querySelector(".close-modal")
 
-  const sidebar = document.createElement("div")
-  sidebar.className = "sidebar"
-  document.body.appendChild(sidebar)
+  const notification = document.getElementById("notification")
 
-  menuBtn.onclick = () => sidebar.classList.toggle("open")
-
-  // ICONS
-  const getIcon = (name) => {
-    name = name.toLowerCase()
-    if (name.includes("ai")) return "fa-robot"
-    if (name.includes("download")) return "fa-download"
-    if (name.includes("tool")) return "fa-wrench"
-    if (name.includes("anime")) return "fa-dragon"
-    if (name.includes("search")) return "fa-search"
-    if (name.includes("islam")) return "fa-mosque"
-    if (name.includes("info")) return "fa-circle-info"
-    if (name.includes("status")) return "fa-signal"
-    return "fa-layer-group"
+  // ================= MENU =================
+  toggleSidebar.onclick = () => {
+    sidebar.classList.toggle("open")
   }
 
-  const settings = await fetch("/src/settings.json").then(r => r.json())
-
-  // SIDEBAR
-  settings.categories.forEach((cat, index) => {
-    const item = document.createElement("div")
-    item.className = "sidebar-item"
-
-    item.innerHTML = `
-      <i class="fas ${getIcon(cat.name)}"></i>
-      <span>${cat.name}</span>
-    `
-
-    item.onclick = () => window.location.href = `?category=${index}`
-
-    sidebar.appendChild(item)
+  document.addEventListener("click", (e) => {
+    if (!sidebar.contains(e.target) && !toggleSidebar.contains(e.target)) {
+      sidebar.classList.remove("open")
+    }
   })
 
-  const params = new URLSearchParams(window.location.search)
-  const selectedCategoryIndex = params.get("category")
+  // ================= POPUP =================
+  threeDots.onclick = (e) => {
+    e.stopPropagation()
+    poupMenu.classList.toggle("open")
+  }
 
-  // =========================
-  // 🏠 HOME
-  // =========================
-  if (selectedCategoryIndex === null) {
+  document.addEventListener("click", () => {
+    poupMenu.classList.remove("open")
+  })
 
-    const totalEndpoints = settings.categories.reduce((a, c) => a + c.items.length, 0)
-    const sectionsCount = settings.categories.length
+  // ================= NOTIFICATION =================
+  function showNotification(msg = "Done") {
+    notification.innerText = msg
+    notification.classList.add("show")
+    setTimeout(() => {
+      notification.classList.remove("show")
+    }, 2500)
+  }
 
-    let dominant = { name: "", count: 0 }
-    settings.categories.forEach(c => {
-      if (c.items.length > dominant.count) {
-        dominant = { name: c.name, count: c.items.length }
+  // ================= MODAL =================
+  function openModal(title, content) {
+    modalTitle.innerText = title
+    modalBody.innerHTML = content
+    modal.classList.add("open")
+  }
+
+  closeModal.onclick = () => modal.classList.remove("open")
+  window.onclick = (e) => {
+    if (e.target === modal) modal.classList.remove("open")
+  }
+
+  // ================= DESCRIPTION =================
+  function parseDescription(desc) {
+    const container = document.getElementById("description-content")
+    container.innerHTML = ""
+
+    if (!desc) return
+
+    const box = document.createElement("div")
+    box.className = "description-container"
+
+    desc.split("\n").forEach(line => {
+      const p = document.createElement("p")
+      p.className = "description-paragraph"
+      p.textContent = line
+      box.appendChild(p)
+    })
+
+    container.appendChild(box)
+  }
+
+  // ================= RENDER API =================
+  function renderApis(categories) {
+    apiContent.innerHTML = ""
+
+    categories.forEach(cat => {
+      const wrap = document.createElement("div")
+      wrap.className = "category-container"
+
+      wrap.innerHTML = `
+        <div class="category-header">
+          <div class="category-title">${cat.name}</div>
+          <div class="category-badge">${cat.apis.length}</div>
+        </div>
+      `
+
+      const table = document.createElement("table")
+      table.className = "api-table"
+
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `
+
+      const tbody = table.querySelector("tbody")
+
+      cat.apis.forEach(api => {
+        const tr = document.createElement("tr")
+
+        tr.innerHTML = `
+          <td>${api.name}</td>
+          <td>${api.method}</td>
+          <td><span class="status-indicator">● Online</span></td>
+          <td>
+            <button class="open-button">Open</button>
+            <button class="test-button">Test</button>
+          </td>
+        `
+
+        // open
+        tr.querySelector(".open-button").onclick = () => {
+          window.open(api.url, "_blank")
+        }
+
+        // test
+        tr.querySelector(".test-button").onclick = async () => {
+          openModal("Testing...", "⏳ Loading...")
+
+          try {
+            const res = await fetch(api.url)
+            const text = await res.text()
+
+            openModal("Result", `<pre>${text}</pre>`)
+          } catch (err) {
+            openModal("Error", `<div class="error-message">${err}</div>`)
+          }
+        }
+
+        tbody.appendChild(tr)
+      })
+
+      wrap.appendChild(table)
+      apiContent.appendChild(wrap)
+    })
+  }
+
+  // ================= SIDEBAR BUTTONS =================
+  function loadSidebar(sections) {
+    dynamicButtons.innerHTML = ""
+
+    sections.forEach(sec => {
+      const btn = document.createElement("button")
+      btn.innerHTML = `<i class="material-icons">folder</i> ${sec.name}`
+
+      btn.onclick = () => {
+        parseDescription(sec.description)
+        renderApis(sec.categories)
+        sidebar.classList.remove("open")
       }
-    })
 
-    // DISTRIBUTION
-    let distHTML = ""
-    settings.categories.forEach(c => {
-      const percent = ((c.items.length / totalEndpoints) * 100).toFixed(0)
-      distHTML += `
-        <div class="dist-box">
-          <div class="dist-top">
-            <span><i class="fas ${getIcon(c.name)}"></i> ${c.name}</span>
-            <span>${c.items.length} endpoints (${percent}%)</span>
-          </div>
-          <div class="dist-bar">
-            <div style="width:${percent}%"></div>
-          </div>
-        </div>
-      `
-    })
-
-    apiContent.innerHTML = `
-      <div class="dashboard">
-
-        <h2 class="title">📊 API Dashboard</h2>
-
-        <div class="stats-grid">
-          <div class="stat-card"><h4>Total</h4><p>${totalEndpoints}</p></div>
-          <div class="stat-card"><h4>Sections</h4><p>${sectionsCount}</p></div>
-          <div class="stat-card"><h4>Top</h4><p>${dominant.name}</p></div>
-        </div>
-
-        <div class="distribution">
-          <h3>Sections Distribution</h3>
-          ${distHTML}
-        </div>
-
-      </div>
-    `
-  }
-
-  // =========================
-  // 📂 CATEGORY
-  // =========================
-  else {
-    const category = settings.categories[selectedCategoryIndex]
-
-    apiContent.innerHTML = `
-      <div class="section-card">
-        <div class="section-header">
-          <i class="fas ${getIcon(category.name)}"></i>
-          <h2>${category.name}</h2>
-        </div>
-
-        <div class="api-grid"></div>
-      </div>
-    `
-
-    const grid = document.querySelector(".api-grid")
-
-    category.items.forEach(item => {
-
-      const tryLink = BASEURL + item.path
-
-      const card = document.createElement("div")
-      card.className = "api-card"
-
-      card.innerHTML = `
-        <div class="api-top">
-          <span class="method">GET</span>
-          <button class="try-btn" onclick="window.open('${tryLink}','_blank')">Try</button>
-        </div>
-
-        <div class="api-body">
-          <h4>${item.name}</h4>
-          <p>${item.desc || "No description"}</p>
-          <code>${item.path}</code>
-        </div>
-      `
-
-      grid.appendChild(card)
+      dynamicButtons.appendChild(btn)
     })
   }
+
+  // ================= LOAD DATA =================
+  async function loadData() {
+    try {
+      const res = await fetch(window.location.href + "/api/")
+      const data = await res.json()
+
+      loadSidebar(data.sections)
+
+      if (data.sections.length > 0) {
+        parseDescription(data.sections[0].description)
+        renderApis(data.sections[0].categories)
+      }
+
+    } catch (err) {
+      openModal("Error", "❌ Failed to load API")
+    }
+  }
+
+  // ================= START =================
+  await loadData()
 
 })
