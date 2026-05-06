@@ -5,13 +5,11 @@ module.exports = function (app) {
 
     const otakudesu = {
 
-        async search(query) {
+        async download(url) {
 
-            if (!query || !query.trim()) {
-                throw new Error("اكتب كلمة البحث");
+            if (!url || !url.trim()) {
+                throw new Error("حط لينك الحلقة");
             }
-
-            const url = `https://otakudesu.cloud/?s=${encodeURIComponent(query)}&post_type=anime`;
 
             const { data } = await axios.get(url, {
                 timeout: 30000,
@@ -22,67 +20,49 @@ module.exports = function (app) {
             });
 
             const $ = cheerio.load(data);
-            const results = [];
 
-            $(".chivsrc li").each((i, el) => {
+            const result = {
+                title: $(".download h4").text().trim(),
+                downloads: []
+            };
 
-                const title = $(el).find("h2 a").text().trim();
-                const link = $(el).find("h2 a").attr("href");
-                const image = $(el).find("img").attr("src");
+            $(".download ul li").each((i, el) => {
 
-                const genres = $(el)
-                    .find(".set")
-                    .first()
-                    .text()
-                    .replace("Genres : ", "")
-                    .trim();
+                const quality = $(el).find("strong").text().trim();
 
-                const status = $(el)
-                    .find(".set")
-                    .eq(1)
-                    .text()
-                    .replace("Status : ", "")
-                    .trim();
+                $(el).find("a").each((_, linkEl) => {
 
-                const rating = $(el)
-                    .find(".set")
-                    .eq(2)
-                    .text()
-                    .replace("Rating : ", "")
-                    .trim() || "N/A";
+                    result.downloads.push({
+                        quality,
+                        host: $(linkEl).text().trim(),
+                        link: $(linkEl).attr("href")
+                    });
 
-                results.push({
-                    title,
-                    link,
-                    image,
-                    genres,
-                    status,
-                    rating
                 });
             });
 
-            if (results.length === 0) {
-                throw new Error("مفيش نتائج");
+            if (result.downloads.length === 0) {
+                throw new Error("مفيش روابط تحميل");
             }
 
-            return results;
+            return result;
         }
     };
 
     // 🔥 endpoint
-    app.get("/api/anime/otakudesu/search", async (req, res) => {
+    app.get("/api/anime/otakudesu/download", async (req, res) => {
 
-        const { q } = req.query;
+        const { url } = req.query;
 
-        if (!q) {
+        if (!url) {
             return res.status(400).json({
                 status: false,
-                error: "اكتب ?q="
+                error: "حط ?url="
             });
         }
 
         try {
-            const result = await otakudesu.search(q);
+            const result = await otakudesu.download(url);
 
             res.json({
                 status: true,
