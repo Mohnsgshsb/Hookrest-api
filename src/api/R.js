@@ -70,35 +70,3 @@ module.exports = function (app) {
     })
 
     // ================= POST =================
-    app.post("/api/anime/otakudesu/search", async (req, res) => {
-        try {
-            const { s } = req.body
-
-            if (!s) {
-                return res.json({
-                    status: false,
-                    creator: "TERBO-SPAM",
-                    message: "❌ اكتب البحث في body"
-                })
-            }
-
-            const data = await searchAnime(s.trim())
-
-            res.json({
-                status: true,
-                creator: "TERBO-SPAM",
-                query: s,
-                result: data
-            })
-
-        } catch (err) {
-            res.status(500).json({
-                status: false,
-                creator: "TERBO-SPAM",
-                message: "❌ حصل خطأ",
-                error: err.message
-            })
-        }
-    })
-
-}
