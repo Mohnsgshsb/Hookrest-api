@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hookrest API</title>
+    <title>Emam API</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -846,6 +846,7 @@
         .global-search-container {
             padding: 0 48px 30px;
             max-width: 700px;
+            margin: 0 auto;
         }
         .global-search {
             position: relative;
@@ -1148,7 +1149,6 @@ function renderSidebar(categories) {
                 showPage('cat-' + catIdx);
                 setActiveNav(navItem);
                 setTimeout(() => {
-                    // Scroll to endpoint card
                     const cards = document.querySelectorAll(`#cat-page-${catIdx} .endpoint-card`);
                     cards.forEach(card => {
                         if (card.dataset.name === item.name.toLowerCase()) {
@@ -1337,7 +1337,6 @@ function filterSidebar(term) {
 
 function filterGlobal(term) {
     if (!term) {
-        // Reset - show all cards
         document.querySelectorAll('.endpoint-card').forEach(card => card.style.display = 'block');
         document.querySelectorAll('.category-section, .category-page').forEach(s => {
             if (!s.classList.contains('category-page') || s.classList.contains('active')) {
@@ -1347,7 +1346,6 @@ function filterGlobal(term) {
         return;
     }
 
-    // If on home page, filter home cards
     const homeCards = document.querySelectorAll('#homePage .endpoint-card');
     homeCards.forEach(card => {
         const name = card.dataset.name;
@@ -1355,13 +1353,11 @@ function filterGlobal(term) {
         card.style.display = (name.includes(term) || path.includes(term)) ? 'block' : 'none';
     });
 
-    // Hide empty category sections on home
     document.querySelectorAll('#homeCategories .category-section').forEach(section => {
         const visible = section.querySelectorAll('.endpoint-card[style*="display: block"], .endpoint-card:not([style*="display"])').length;
         section.style.display = visible > 0 ? 'block' : 'none';
     });
 
-    // Also filter active category page
     const activePage = document.querySelector('.category-page.active');
     if (activePage) {
         activePage.querySelectorAll('.endpoint-card').forEach(card => {
