@@ -1452,7 +1452,7 @@ body {
         <!-- HOME PAGE -->
         <div id="homePage">
             <div class="hero-section">
-                <h1 class="hero-title" id="heroTitle">DevX API</h1>
+                <h1 class="hero-title" id="heroTitle">${settingsData.name}</h1>
                 <div class="hero-tags">
     <span>REST API</span>
     <span>AI</span>
@@ -1657,7 +1657,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('footerYear').textContent = new Date().getFullYear();
 
     try {
-        const res = await fetch(BASEURL + '/src/settings.json');
+        const res = await fetch('./settings.json');
         settingsData = await res.json();
         renderApp(settingsData);
     } catch (e) {
@@ -1681,8 +1681,6 @@ function renderApp(settings) {
     const desc = settings.description || 'Simple APIs';
     document.getElementById('sidebarBrand').textContent = name;
     document.getElementById('sidebarDesc').textContent = desc;
-    document.getElementById('heroTitle').textContent = name;
-    document.getElementById('heroDesc').textContent = desc;
 
     let totalEndpoints = 0;
     settings.categories.forEach(cat => totalEndpoints += cat.items.length);
