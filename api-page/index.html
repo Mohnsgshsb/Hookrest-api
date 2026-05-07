@@ -1907,58 +1907,7 @@ function createEndpointCard(item, catIdx, idx) {
     `;
     return card;
 }
-function renderModernHome() {
-    document.getElementById('homePage').innerHTML = `
-    
-    <div class="modern-home">
 
-        <div class="hero-modern">
-
-            <img src="https://files.catbox.moe/t45g82.jpeg" class="hero-logo">
-
-            <h1>DevX API</h1>
-
-            <p>
-                Modern APIs Platform For Developers
-            </p>
-
-        </div>
-
-        <div class="dashboard-grid">
-
-            <div class="dashboard-card">
-                <i class="fas fa-cube"></i>
-                <span>Total APIs</span>
-                <h2>${allEndpoints.length}</h2>
-            </div>
-
-            <div class="dashboard-card">
-                <i class="fas fa-layer-group"></i>
-                <span>Sections</span>
-                <h2>${settingsData.categories.length}</h2>
-            </div>
-
-            <div class="dashboard-card">
-                <i class="fas fa-signal"></i>
-                <span>Status</span>
-                <h2>Online</h2>
-            </div>
-
-        </div>
-
-        <div class="welcome-box">
-
-            <h2>Welcome To Terbo API 👋</h2>
-
-            <p>
-                Fast, secure and powerful APIs platform for developers.
-            </p>
-
-        </div>
-
-    </div>
-    `;
-}
 // ========== PAGE NAVIGATION ==========
 function showPage(pageId) {
     // Hide all pages
