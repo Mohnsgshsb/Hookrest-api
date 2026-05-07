@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emam API</title>
+    <title>DevX API</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -49,16 +49,104 @@
 
         /* ===== LAYOUT ===== */
         .app-layout {
-            display: flex;
-            min-height: 100vh;
-            position: relative;
-            z-index: 1;
-        }
+    display: block;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+}
+.sidebar-contact {
+    padding: 14px 12px;
+    border-top: 1px solid rgba(124,58,237,0.15);
+}
 
+.contact-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #a78bfa;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    padding: 0 6px;
+}
+.hero-tags {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.hero-tags span {
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(124,58,237,0.12);
+    border: 1px solid rgba(124,58,237,0.22);
+    color: #c4b5fd;
+    font-size: 0.8rem;
+}
+.contact-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(124,58,237,0.15);
+    border-radius: 12px;
+    color: #d1d5db;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.contact-box::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(124,58,237,0.18),
+        transparent
+    );
+    opacity: 0;
+    transition: 0.3s;
+}
+
+.contact-box:hover::before {
+    opacity: 1;
+}
+
+.contact-box:hover {
+    transform: translateX(4px);
+    border-color: #7c3aed;
+    background: rgba(124,58,237,0.08);
+    box-shadow: 0 0 18px rgba(124,58,237,0.22);
+    color: white;
+}
+
+.contact-box i {
+    width: 18px;
+    text-align: center;
+    color: #a78bfa;
+    font-size: 1rem;
+    position: relative;
+    z-index: 2;
+}
+
+.contact-box span {
+    position: relative;
+    z-index: 2;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
         /* ===== SIDEBAR ===== */
         .sidebar {
             width: var(--sidebar-width);
-            background: rgba(17, 17, 31, 0.98);
+            background: rgba(17, 17, 31, 0.50);
             backdrop-filter: blur(30px);
             border-right: 1px solid var(--border);
             position: fixed;
@@ -68,6 +156,56 @@
             flex-direction: column;
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .frame {
+    margin-top: 30px;
+}
+
+.example {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 26px;
+    padding: 28px 22px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 0 35px rgba(124,58,237,0.12);
+}
+
+.example h2 {
+    color: #c4b5fd;
+    font-size: 1.2rem;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.api-display {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+#api-url {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(124,58,237,0.22);
+    padding: 14px 16px;
+    border-radius: 14px;
+    color: #d1d5db;
+    font-size: 0.88rem;
+    overflow-x: auto;
+}
+
+.response-box {
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(124,58,237,0.22);
+    border-radius: 14px;
+    padding: 18px;
+    color: #a78bfa;
+    font-family: monospace;
+    white-space: pre-wrap;
+    line-height: 1.7;
+    overflow-x: auto;
+    box-shadow: inset 0 0 20px rgba(124,58,237,0.08);
+}
         .sidebar-header {
             padding: 28px 24px 20px;
             border-bottom: 1px solid var(--border);
@@ -165,46 +303,97 @@
         .nav-category-header i { font-size: 0.65rem; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         .nav-category-header.collapsed i { transform: rotate(-90deg); }
 
-        .nav-items { overflow: hidden; transition: max-height 0.35s ease; }
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 22px 8px 36px;
-            color: var(--text-secondary);
-            font-size: 0.82rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-left: 2px solid transparent;
-            text-decoration: none;
-            border-radius: 0 8px 8px 0;
-            margin-right: 8px;
-        }
-        .nav-item:hover {
-            color: var(--text-primary);
-            background: rgba(124, 58, 237, 0.06);
-            border-left-color: var(--accent);
-        }
-        .nav-item.active {
-            color: var(--accent-light);
-            background: rgba(124, 58, 237, 0.1);
-            border-left-color: var(--accent);
-            font-weight: 600;
-        }
-        .nav-item .method-badge-mini {
-            font-size: 0.6rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: rgba(16, 185, 129, 0.12);
-            color: var(--success);
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-        .nav-item .nav-endpoint-name {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+       .nav-items {
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+    padding: 4px 0;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin: 8px 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(124, 58, 237, 0.15);
+    border-radius: 12px;
+    color: #d1d5db;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.nav-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(124,58,237,0.18),
+        transparent
+    );
+    opacity: 0;
+    transition: 0.3s;
+}
+
+.nav-item:hover::before {
+    opacity: 1;
+}
+
+.nav-item:hover {
+    color: #fff;
+    transform: translateX(4px);
+    border-color: rgba(124,58,237,0.45);
+    background: rgba(124,58,237,0.08);
+    box-shadow: 0 0 18px rgba(124,58,237,0.22);
+}
+
+.nav-item.active {
+    color: #fff;
+    background: linear-gradient(
+        90deg,
+        rgba(124,58,237,0.22),
+        rgba(124,58,237,0.08)
+    );
+    border-color: #7c3aed;
+    box-shadow: 0 0 22px rgba(124,58,237,0.28);
+}
+
+.nav-item i {
+    width: 18px;
+    text-align: center;
+    color: #a78bfa;
+    font-size: 0.9rem;
+    z-index: 2;
+}
+
+.nav-item span {
+    position: relative;
+    z-index: 2;
+}
+
+.nav-item .method-badge-mini {
+    font-size: 0.6rem;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: rgba(124,58,237,0.18);
+    color: #c4b5fd;
+    font-weight: 700;
+    flex-shrink: 0;
+    z-index: 2;
+}
+
+.nav-item .nav-endpoint-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
         .sidebar-footer {
             padding: 16px 20px;
@@ -216,13 +405,195 @@
 
         /* ===== MAIN CONTENT ===== */
         .main-content {
-            margin-left: var(--sidebar-width);
-            flex: 1;
-            min-height: 100vh;
-            padding: 0;
-            max-width: calc(100% - var(--sidebar-width));
-        }
+    width: 100%;
+    min-height: 100vh;
+    padding: 0;
+    margin-left: 0;
+    max-width: 100%;
+}
+#homePage,
+.modern-home,
+.hero-section {
+    min-height: auto !important;
+    height: auto !important;
+    display: block !important;
+    padding-top: 20px !important;
+    margin-top: 0 !important;
+}
 
+.main-content {
+    padding-top: 0 !important;
+}
+.modern-home {
+    padding: 24px 18px 90px;
+}
+
+.dashboard-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 24px;
+    padding: 22px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 0 35px rgba(124,58,237,0.12);
+}
+
+.dashboard-box h2 {
+    color: #c4b5fd;
+    font-size: 1.15rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+    gap: 16px;
+}
+
+.modern-stat-card {
+    background: rgba(124,58,237,0.08);
+    border: 1px solid rgba(124,58,237,0.2);
+    border-radius: 18px;
+    padding: 22px 18px;
+    text-align: center;
+    transition: 0.3s;
+}
+
+.modern-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 22px rgba(124,58,237,0.25);
+}
+
+.modern-stat-card i {
+    font-size: 1.4rem;
+    color: #a78bfa;
+    margin-bottom: 10px;
+}
+
+.modern-stat-card span {
+    display: block;
+    color: #9ca3af;
+    margin-bottom: 8px;
+    font-size: 0.82rem;
+}
+
+.modern-stat-card h3 {
+    color: white;
+    font-size: 1.5rem;
+}
+
+.owner-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 26px;
+    padding: 35px 22px;
+    text-align: center;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 0 35px rgba(124,58,237,0.12);
+}
+
+.owner-card img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #7c3aed;
+    margin-bottom: 18px;
+    box-shadow: 0 0 35px rgba(124,58,237,0.45);
+}
+
+.owner-card h2 {
+    color: #c4b5fd;
+    font-size: 1.7rem;
+    margin-bottom: 12px;
+}
+
+.owner-card p {
+    color: #9ca3af;
+    line-height: 1.8;
+    margin-bottom: 24px;
+}
+
+.owner-buttons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.owner-buttons a {
+    padding: 12px 20px;
+    border-radius: 14px;
+    background: rgba(124,58,237,0.08);
+    border: 1px solid rgba(124,58,237,0.22);
+    color: #d1d5db;
+    text-decoration: none;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.owner-buttons a:hover {
+    background: rgba(124,58,237,0.18);
+    box-shadow: 0 0 20px rgba(124,58,237,0.25);
+    transform: translateY(-3px);
+    color: white;
+}
+
+.dashboard-card {
+    padding: 28px;
+    border-radius: 22px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(124,58,237,0.22);
+    text-align: center;
+    transition: 0.3s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 30px rgba(124,58,237,0.22);
+}
+
+.dashboard-card i {
+    font-size: 1.5rem;
+    color: #a78bfa;
+    margin-bottom: 12px;
+}
+
+.dashboard-card span {
+    display: block;
+    color: #9ca3af;
+    margin-bottom: 10px;
+}
+
+.dashboard-card h2 {
+    color: white;
+    font-size: 1.8rem;
+}
+
+.welcome-box {
+    margin-top: 30px;
+    padding: 35px;
+    border-radius: 28px;
+    text-align: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(124,58,237,0.22);
+    box-shadow: 0 0 35px rgba(124,58,237,0.12);
+}
+
+.welcome-box h2 {
+    color: #c4b5fd;
+    margin-bottom: 15px;
+}
+
+.welcome-box p {
+    color: #9ca3af;
+    line-height: 1.8;
+}
         /* ===== HERO ===== */
         .hero-section {
             text-align: center;
@@ -791,9 +1162,27 @@
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 1024px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); }
-            .main-content { margin-left: 0; max-width: 100%; }
+            .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    z-index: 9999;
+    overflow-y: auto;
+
+    transform: translateX(-100%);
+    transition: transform 0.35s ease;
+
+    background: rgba(10,10,20,0.95);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(124,58,237,0.15);
+}
+
+.sidebar.open {
+    transform: translateX(0);
+}
+.main-content { margin-left: 0; max-width: 100%; }
             .sidebar-toggle { display: flex; }
             .hero-title { font-size: 2.2rem; }
             .stats-row { gap: 16px; flex-wrap: wrap; }
@@ -891,10 +1280,87 @@
         @media (max-width: 1024px) {
             .global-search-container { padding: 0 20px 20px; }
         }
+        .bg-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    z-index: -1;
+    opacity: 0.45;
+    animation: floatOrb 12s infinite ease-in-out;
+}
+
+.orb1 {
+    width: 320px;
+    height: 320px;
+    background: #7c3aed;
+    top: -100px;
+    left: -80px;
+}
+
+.orb2 {
+    width: 260px;
+    height: 260px;
+    background: #9333ea;
+    bottom: 60px;
+    right: -80px;
+    animation-delay: 3s;
+}
+
+.orb3 {
+    width: 180px;
+    height: 180px;
+    background: #6366f1;
+    top: 40%;
+    left: 60%;
+    animation-delay: 6s;
+}
+
+@keyframes floatOrb {
+    0%,100% {
+        transform: translateY(0px) translateX(0px);
+    }
+
+    50% {
+        transform: translateY(-40px) translateX(20px);
+    }
+}
+html,
+body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.app-layout {
+    display: block !important;
+}
+
+.main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: auto !important;
+}
+
+#homePage {
+    margin: 0 !important;
+    padding-top: 20px !important;
+}
+
+.hero-section,
+.modern-home {
+    margin-top: 0 !important;
+    min-height: auto !important;
+    height: auto !important;
+    transform: none !important;
+}
     </style>
 </head>
 <body>
-
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+<div class="bg-orb orb3"></div>
 <!-- Particles -->
 <div id="particles-js"></div>
 
@@ -908,27 +1374,77 @@
 
 <!-- App Layout -->
 <div class="app-layout">
+
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
+
         <div class="sidebar-header">
+
             <div class="sidebar-brand">
-                <div class="sidebar-brand-icon"><i class="fas fa-bolt"></i></div>
-                <div>
-                    <div class="sidebar-brand-text" id="sidebarBrand">Hookrest API</div>
-                    <div class="sidebar-brand-desc" id="sidebarDesc">Simple & Powerful APIs</div>
+
+                <div class="sidebar-brand-icon">
+                    <i class="fas fa-bolt"></i>
                 </div>
+
+                <div class="sidebar-brand-content">
+
+                    <div class="sidebar-brand-text" id="sidebarBrand">
+                        Terbo API
+                    </div>
+
+                    <div class="sidebar-brand-desc" id="sidebarDesc">
+                        Simple & Powerful APIs
+                    </div>
+
+                </div>
+
             </div>
+
         </div>
+
         <div class="sidebar-search">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" id="sidebarSearch" placeholder="Search endpoints...">
+                <input
+                    type="text"
+                    id="sidebarSearch"
+                    placeholder="Search endpoints..."
+                >
             </div>
+
         </div>
+
         <nav class="sidebar-nav" id="sidebarNav"></nav>
-        <div class="sidebar-footer">
-            <span id="footerYear"></span> Hookrest API. All rights reserved.
+
+        <div class="sidebar-contact">
+
+            <div class="contact-title">
+                <i class="fas fa-user-circle"></i>
+                <span>Contact</span>
+            </div>
+
+            <a href="https://t.me/USERNAME" target="_blank" class="contact-box">
+                <i class="fab fa-telegram"></i>
+                <span>Telegram</span>
+            </a>
+
+            <a href="https://github.com/USERNAME" target="_blank" class="contact-box">
+                <i class="fab fa-github"></i>
+                <span>GitHub</span>
+            </a>
+
+            <a href="https://youtube.com/@USERNAME" target="_blank" class="contact-box">
+                <i class="fab fa-youtube"></i>
+                <span>YouTube</span>
+            </a>
+
         </div>
+
+        <div class="sidebar-footer">
+            <span id="footerYear"></span>
+            DevX API. All rights reserved.
+        </div>
+
     </aside>
 
     <!-- Main Content -->
@@ -936,7 +1452,13 @@
         <!-- HOME PAGE -->
         <div id="homePage">
             <div class="hero-section">
-                <h1 class="hero-title" id="heroTitle">Hookrest API</h1>
+                <h1 class="hero-title" id="heroTitle">DevX API</h1>
+                <div class="hero-tags">
+    <span>REST API</span>
+    <span>AI</span>
+    <span>Downloader</span>
+    <span>Tools</span>
+</div>
                 <p class="hero-desc" id="heroDesc">Simple, fast, and reliable APIs for your projects. Explore our powerful endpoints.</p>
                 <div class="global-search-container">
                     <div class="global-search">
@@ -960,7 +1482,93 @@
                     </div>
                 </div>
             </div>
-            <div id="homeCategories"></div>
+            <div class="modern-home">
+
+    <div class="dashboard-box">
+        <h2><i class="fas fa-chart-simple"></i> API Statistics</h2>
+
+        <div class="stats-grid">
+            <div class="modern-stat-card">
+                <i class="fas fa-cube"></i>
+                <span>Total APIs</span>
+                <h3 id="statEndpoints">0</h3>
+            </div>
+
+            <div class="modern-stat-card">
+                <i class="fas fa-layer-group"></i>
+                <span>Sections</span>
+                <h3 id="statCategories">0</h3>
+            </div>
+
+            <div class="modern-stat-card">
+                <i class="fas fa-bolt"></i>
+                <span>Status</span>
+                <h3>Online</h3>
+            </div>
+        </div>
+    </div>
+    <div class="frame">
+
+    <div class="coding" id="coding"></div>
+
+    <div class="example" id="example">
+
+        <h2>
+            <i class="fas fa-code"></i>
+            Example API Request
+        </h2>
+
+        <div class="api-display">
+
+            <p id="api-url">
+                https://terbo-api.vercel.app/api/masry?text=اخبارك
+            </p>
+
+            <div id="api-response" class="response-box">
+{
+   
+  "status": true,
+  "creator": "TERBO-SPAM",
+  "input": "عامل اي",
+  "response": "أنا تمام، يا عم! إنت عامل إيه؟ 😎🔥 الدنيا ماشية معاك ولا إيه؟"
+}
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+    <div class="owner-card">
+
+        <img src="https://files.catbox.moe/wqpoox.jpeg">
+
+        <h2>DevX API</h2>
+
+        <p>
+            Modern APIs platform for developers.<br>
+            Fast, secure and powerful services.
+        </p>
+
+        <div class="owner-buttons">
+
+            <a href="https://t.me/Dev_XS">
+                <i class="fab fa-telegram"></i>
+                Telegram
+            </a>
+
+            <a href="https://github.com/Mohnsgshsb">
+                <i class="fab fa-github"></i>
+                GitHub
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
         </div>
 
         <!-- CATEGORY PAGES (dynamically generated) -->
@@ -1069,7 +1677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ========== RENDER APP ==========
 function renderApp(settings) {
-    const name = settings.name || 'Hookrest API';
+    const name = settings.name || 'DevX API';
     const desc = settings.description || 'Simple APIs';
     document.getElementById('sidebarBrand').textContent = name;
     document.getElementById('sidebarDesc').textContent = desc;
@@ -1090,8 +1698,8 @@ function renderApp(settings) {
     });
 
     renderSidebar(settings.categories);
-    renderHomePage(settings.categories);
-    renderCategoryPages(settings.categories);
+    renderModernHome();
+renderCategoryPages(settings.categories);
 
     // Search handlers
     document.getElementById('sidebarSearch').addEventListener('input', (e) => {
@@ -1299,7 +1907,58 @@ function createEndpointCard(item, catIdx, idx) {
     `;
     return card;
 }
+function renderModernHome() {
+    document.getElementById('homePage').innerHTML = `
+    
+    <div class="modern-home">
 
+        <div class="hero-modern">
+
+            <img src="https://files.catbox.moe/t45g82.jpeg" class="hero-logo">
+
+            <h1>DevX API</h1>
+
+            <p>
+                Modern APIs Platform For Developers
+            </p>
+
+        </div>
+
+        <div class="dashboard-grid">
+
+            <div class="dashboard-card">
+                <i class="fas fa-cube"></i>
+                <span>Total APIs</span>
+                <h2>${allEndpoints.length}</h2>
+            </div>
+
+            <div class="dashboard-card">
+                <i class="fas fa-layer-group"></i>
+                <span>Sections</span>
+                <h2>${settingsData.categories.length}</h2>
+            </div>
+
+            <div class="dashboard-card">
+                <i class="fas fa-signal"></i>
+                <span>Status</span>
+                <h2>Online</h2>
+            </div>
+
+        </div>
+
+        <div class="welcome-box">
+
+            <h2>Welcome To Terbo API 👋</h2>
+
+            <p>
+                Fast, secure and powerful APIs platform for developers.
+            </p>
+
+        </div>
+
+    </div>
+    `;
+}
 // ========== PAGE NAVIGATION ==========
 function showPage(pageId) {
     // Hide all pages
