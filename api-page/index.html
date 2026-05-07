@@ -1679,34 +1679,49 @@ document.addEventListener('DOMContentLoaded', async () => {
 function renderApp(settings) {
     const name = settings.name || 'DevX API';
     const desc = settings.description || 'Simple APIs';
+
+    settingsData = settings;
+
     document.getElementById('sidebarBrand').textContent = name;
     document.getElementById('sidebarDesc').textContent = desc;
 
     let totalEndpoints = 0;
-    settings.categories.forEach(cat => totalEndpoints += cat.items.length);
-    document.getElementById('statEndpoints').textContent = totalEndpoints;
-    document.getElementById('statCategories').textContent = settings.categories.length;
 
-    // Build all endpoints list for search
+    settings.categories.forEach(cat => {
+        totalEndpoints += cat.items.length;
+    });
+
     allEndpoints = [];
+
     settings.categories.forEach((cat, catIdx) => {
         cat.items.forEach(item => {
-            allEndpoints.push({ ...item, category: cat.name, categoryIndex: catIdx });
+            allEndpoints.push({
+                ...item,
+                category: cat.name,
+                categoryIndex: catIdx
+            });
         });
     });
 
-    renderSidebar(settings.categories);
-    renderModernHome();
-renderCategoryPages(settings.categories);
+    document.getElementById('statEndpoints').textContent = totalEndpoints;
+    document.getElementById('statCategories').textContent = settings.categories.length;
 
-    // Search handlers
-    document.getElementById('sidebarSearch').addEventListener('input', (e) => {
+    renderSidebar(settings.categories);
+    renderCategoryPages(settings.categories);
+    renderModernHome();
+
+    document.getElementById('sidebarSearch')
+    .addEventListener('input', (e) => {
         filterSidebar(e.target.value.toLowerCase());
     });
-    document.getElementById('globalSearch').addEventListener('input', (e) => {
+
+    document.getElementById('globalSearch')
+    .addEventListener('input', (e) => {
         filterGlobal(e.target.value.toLowerCase());
     });
 }
+
+    // Search handler
 
 function renderSidebar(categories) {
     const nav = document.getElementById('sidebarNav');
@@ -1793,43 +1808,6 @@ function toggleCategory(header, itemsDiv) {
     }
 }
 
-function renderHomePage(categories) {
-    const container = document.getElementById('homeCategories');
-    container.innerHTML = '';
-
-    const categoryIcons = {
-        'download': 'fa-download', 'ai': 'fa-robot', 'tools': 'fa-tools',
-        'search': 'fa-search', 'media': 'fa-image', 'game': 'fa-gamepad',
-        'anime': 'fa-tv', 'sticker': 'fa-smile', 'text': 'fa-font',
-        'converter': 'fa-exchange-alt', 'random': 'fa-dice', 'default': 'fa-cube'
-    };
-
-    categories.forEach((cat, catIdx) => {
-        const section = document.createElement('section');
-        section.className = 'category-section';
-        section.style.cssText = 'padding: 0 48px 40px;';
-
-        const catKey = cat.name.toLowerCase();
-        const iconClass = categoryIcons[catKey] || categoryIcons['default'];
-        const sortedItems = cat.items.sort((a, b) => a.name.localeCompare(b.name)).slice(0, 4);
-
-        section.innerHTML = `
-            <div class="category-header" style="cursor:pointer;" onclick="showPage('cat-${catIdx}')">
-                <div class="category-icon"><i class="fas ${iconClass}"></i></div>
-                <h2 class="category-title">${cat.name}</h2>
-                <span class="category-count">${cat.items.length} endpoints <i class="fas fa-arrow-right" style="margin-left:8px;"></i></span>
-            </div>
-            <div class="endpoints-list" id="home-endpoints-${catIdx}"></div>
-        `;
-        container.appendChild(section);
-
-        const list = section.querySelector('.endpoints-list');
-        sortedItems.forEach((item, idx) => {
-            const card = createEndpointCard(item, catIdx, idx);
-            list.appendChild(card);
-        });
-    });
-}
 
 function renderCategoryPages(categories) {
     const container = document.getElementById('categoryPages');
@@ -1942,37 +1920,21 @@ function filterSidebar(term) {
 }
 
 function filterGlobal(term) {
-    if (!term) {
-        document.querySelectorAll('.endpoint-card').forEach(card => card.style.display = 'block');
-        document.querySelectorAll('.category-section, .category-page').forEach(s => {
-            if (!s.classList.contains('category-page') || s.classList.contains('active')) {
-                s.style.display = s.classList.contains('category-page') ? 'block' : '';
-            }
-        });
-        return;
-    }
 
-    const homeCards = document.querySelectorAll('#homePage .endpoint-card');
-    homeCards.forEach(card => {
+    document.querySelectorAll('.endpoint-card').forEach(card => {
+
         const name = card.dataset.name;
         const path = card.dataset.path;
-        card.style.display = (name.includes(term) || path.includes(term)) ? 'block' : 'none';
+
+        card.style.display =
+        (!term || name.includes(term) || path.includes(term))
+        ? 'block'
+        : 'none';
+
     });
 
-    document.querySelectorAll('#homeCategories .category-section').forEach(section => {
-        const visible = section.querySelectorAll('.endpoint-card[style*="display: block"], .endpoint-card:not([style*="display"])').length;
-        section.style.display = visible > 0 ? 'block' : 'none';
-    });
-
-    const activePage = document.querySelector('.category-page.active');
-    if (activePage) {
-        activePage.querySelectorAll('.endpoint-card').forEach(card => {
-            const name = card.dataset.name;
-            const path = card.dataset.path;
-            card.style.display = (name.includes(term) || path.includes(term)) ? 'block' : 'none';
-        });
-    }
 }
+
 
 // ========== MODAL ==========
 function openTryModal(path, name, desc, innerDesc) {
@@ -2012,7 +1974,6 @@ function openTryModal(path, name, desc, innerDesc) {
             paramsDiv.appendChild(info);
         }
     }
-
     document.getElementById('responseSection').style.display = 'none';
     document.getElementById('responseBody').innerHTML = 'Click Execute to see the response';
     document.getElementById('responseStatus').className = 'response-status status-loading';
