@@ -1657,7 +1657,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('footerYear').textContent = new Date().getFullYear();
 
     try {
-        const res = await fetch('./settings.json');
+        const res = await fetch('./src/settings.json');
         settingsData = await res.json();
         renderApp(settingsData);
     } catch (e) {
