@@ -1,105 +1,62 @@
-const axios = require("axios");
+const axios = require('axios');
 
 module.exports = function (app) {
 
-  async function fastdl(url) {
-    try {
-      url = url.split("?")[0];
+    app.get('/download/soundcloud', async (req, res) => {
+        const { url } = req.query;
 
-      const headers = {
-        accept: "*/*",
-        "user-agent": "Mozilla/5.0 (Linux; Android 10)",
-        referer: "https://fastdl.cc/"
-      };
+        if (!url) {
+            return res.status(400).json({
+                status: false,
+                error: 'Parameter "url" مطلوب.'
+            });
+        }
 
-      let endpoint;
-      let referer;
+        try {
+            const response = await axios.post(
+                'https://snapfrom.com/wp-json/aio-dl/video-data/',
+                new URLSearchParams({
+                    url: url,
+                    token: '1f91c03707528fc9d3e507fadcf4c5bdd75e9ed776306422bb64fa76559ed3c8'
+                }),
+                {
+                    headers: {
+                        'authority': 'snapfrom.com',
+                        'accept': '*/*',
+                        'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+                        'content-type': 'application/x-www-form-urlencoded',
+                        'origin': 'https://snapfrom.com',
+                        'referer': 'https://snapfrom.com/soundcloud-music-downloader/',
+                        'sec-ch-ua': '"Chromium";v="139", "Not;A=Brand";v="99"',
+                        'sec-ch-ua-mobile': '?1',
+                        'sec-ch-ua-platform': '"Android"',
+                        'sec-fetch-dest': 'empty',
+                        'sec-fetch-mode': 'cors',
+                        'sec-fetch-site': 'same-origin',
+                        'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36'
+                    }
+                }
+            );
 
-      if (url.includes("/reel/")) {
-        endpoint = "reels/download";
-        referer = "https://fastdl.cc/reels";
-      } else if (url.includes("/stories/")) {
-        endpoint = "story/download";
-        referer = "https://fastdl.cc/story";
-      } else {
-        endpoint = "img/download";
-        referer = "https://fastdl.cc/photo";
-      }
+            res.json({
+                status: true,
+                result: response.data
+            });
 
-      headers.referer = referer;
+        } catch (err) {
+            if (err.response) {
+                return res.status(err.response.status).json({
+                    status: false,
+                    error: 'API request failed',
+                    message: err.response.data
+                });
+            }
 
-      const { data } = await axios.get(
-        `https://fastdl.cc/${endpoint}?url=${encodeURIComponent(url)}`,
-        { headers, timeout: 20000 }
-      );
-
-      if (!data.success) throw new Error("Media not found");
-
-      let media = [];
-
-      if (data.images) {
-        media = data.images.map(v => v.url);
-      } else if (data.url) {
-        media = [data.url];
-      }
-
-      return {
-        status: true,
-        type: data.type,
-        total: media.length,
-        media
-      };
-
-    } catch (e) {
-      return {
-        status: false,
-        message: e.message
-      };
-    }
-  }
-
-  // ================= API =================
-  app.get("/api/fastigdl", async (req, res) => {
-    const { url } = req.query;
-
-    if (!url) {
-      return res.status(400).json({
-        status: false,
-        error: "حط رابط انستجرام ?url="
-      });
-    }
-
-    if (!url.includes("instagram.com")) {
-      return res.status(400).json({
-        status: false,
-        error: "رابط غير صحيح"
-      });
-    }
-
-    try {
-      const result = await fastdl(url);
-
-      if (!result.status) {
-        return res.json({
-          status: false,
-          creator: "TERBO-SPAM",
-          message: result.message
-        });
-      }
-
-      res.json({
-        status: true,
-        creator: "TERBO-SPAM",
-        input: url,
-        result
-      });
-
-    } catch (err) {
-      res.status(500).json({
-        status: false,
-        error: err.message
-      });
-    }
-  });
+            res.status(500).json({
+                status: false,
+                error: err.message
+            });
+        }
+    });
 
 };
