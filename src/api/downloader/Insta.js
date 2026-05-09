@@ -1,71 +1,103 @@
-const axios = require('axios');
+const axios = require("axios");
 
 module.exports = function (app) {
 
-  app.get('/api/instav2', async (req, res) => {
+  async function fastdl(url) {
+    try {
+      url = url.split("?")[0];
+
+      const headers = {
+        accept: "*/*",
+        "user-agent": "Mozilla/5.0 (Linux; Android 10)",
+        referer: "https://fastdl.cc/"
+      };
+
+      let endpoint;
+      let referer;
+
+      if (url.includes("/reel/")) {
+        endpoint = "reels/download";
+        referer = "https://fastdl.cc/reels";
+      } else if (url.includes("/stories/")) {
+        endpoint = "story/download";
+        referer = "https://fastdl.cc/story";
+      } else {
+        endpoint = "img/download";
+        referer = "https://fastdl.cc/photo";
+      }
+
+      headers.referer = referer;
+
+      const { data } = await axios.get(
+        `https://fastdl.cc/${endpoint}?url=${encodeURIComponent(url)}`,
+        { headers, timeout: 20000 }
+      );
+
+      if (!data.success) throw new Error("Media not found");
+
+      let media = [];
+
+      if (data.images) {
+        media = data.images.map(v => v.url);
+      } else if (data.url) {
+        media = [data.url];
+      }
+
+      return {
+        status: true,
+        type: data.type,
+        total: media.length,
+        media
+      };
+
+    } catch (e) {
+      return {
+        status: false,
+        message: e.message
+      };
+    }
+  }
+
+  // ================= API =================
+  app.get("/api/fastigdl", async (req, res) => {
     const { url } = req.query;
 
     if (!url) {
       return res.status(400).json({
         status: false,
-        message: 'حط الرابط'
+        error: "حط رابط انستجرام ?url="
+      });
+    }
+
+    if (!url.includes("instagram.com")) {
+      return res.status(400).json({
+        status: false,
+        error: "رابط غير صحيح"
       });
     }
 
     try {
-      const response = await axios.post(
-        'https://downloadapi.stuff.solutions/api/json',
-        {
-          url: url,
-          isAudioOnly: false,
-          filenameStyle: "pretty"
-        },
-        {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/146.0.0.0 Mobile Safari/537.36',
-            'Accept': 'application/json',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Content-Type': 'application/json',
-            'sec-ch-ua-platform': '"Android"',
-            'sec-ch-ua': '"Chromium";v="146", "Not-A.Brand";v="24", "Android WebView";v="146"',
-            'sec-ch-ua-mobile': '?1',
-            'origin': 'https://tiktok-downloader-hd.vercel.app',
-            'x-requested-with': 'mark.via.gp',
-            'sec-fetch-site': 'cross-site',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-dest': 'empty',
-            'referer': 'https://tiktok-downloader-hd.vercel.app/',
-            'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
-            'priority': 'u=1, i'
-          },
-          timeout: 30000
-        }
-      );
+      const result = await fastdl(url);
 
-      const data = response.data;
-
-      if (!data || !data.url) {
-        return res.status(500).json({
+      if (!result.status) {
+        return res.json({
           status: false,
-          message: 'فشل في التحميل'
+          creator: "TERBO-SPAM",
+          message: result.message
         });
       }
 
-      return res.json({
+      res.json({
         status: true,
         creator: "TERBO-SPAM",
-        result: {
-          title: data.title,
-          thumbnail: data.thumbnail,
-          media: data.url,
-          type: data.type
-        }
+        input: url,
+        result
       });
 
     } catch (err) {
-      return res.status(500).json({
+      res.status(500).json({
         status: false,
-        message: err.message
+        error: err.message
       });
     }
   });
