@@ -1,153 +1,133 @@
 const fetch = require("node-fetch");
+const CryptoJS = require("crypto-js");
+
+const AES_KEY = "ai-enhancer-web__aes-key";
+const AES_IV = "aienhancer-aesiv";
+
+function encryptSettings(settings) {
+  const key = CryptoJS.enc.Utf8.parse(AES_KEY);
+  const iv = CryptoJS.enc.Utf8.parse(AES_IV);
+  return CryptoJS.AES.encrypt(
+    JSON.stringify(settings),
+    key,
+    { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+  ).toString();
+}
+
+async function createTask(base64Image, promptText) {
+  const settings = {
+    aspect_ratio: "match_input_image",
+    output_format: "jpg",
+    prompt: promptText
+  };
+
+  const payload = {
+    model: 2,
+    image: [base64Image],
+    function: 'ai-image-editor',
+    settings: encryptSettings(settings)
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Linux; Android 16; ASUS_AI2401_A Build/BP2A.250605.015) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.6998.135 Mobile Safari/537.36',
+    'Origin': 'https://aienhancer.ai',
+    'Referer': 'https://aienhancer.ai/ai-image-editor',
+    'Accept': '*/*',
+    'Accept-Language': 'id-ID,id;q=0.9',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'x-requested-with': 'mark.via.gp'
+  };
+
+  const res = await fetch('https://aienhancer.ai/api/v1/r/image-enhance/create', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+  if (data.code !== 100000) throw new Error(data.message);
+  return data.data.id;
+}
+
+async function pollResult(taskId, interval = 3000, timeout = 90000) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Linux; Android 16; ASUS_AI2401_A Build/BP2A.250605.015) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.6998.135 Mobile Safari/537.36',
+    'Origin': 'https://aienhancer.ai',
+    'Referer': 'https://aienhancer.ai/ai-image-editor',
+    'x-requested-with': 'mark.via.gp'
+  };
+
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const res = await fetch('https://aienhancer.ai/api/v1/r/image-enhance/result', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ task_id: taskId })
+    });
+
+    const data = await res.json();
+    if (data.code !== 100000) throw new Error(data.message);
+    const task = data.data;
+    if (task.status === 'succeeded') return task.output;
+    if (task.status === 'failed') throw new Error(task.error || 'Task failed');
+    await new Promise(r => setTimeout(r, interval));
+  }
+  throw new Error('Timed out waiting for result');
+}
 
 module.exports = function (app) {
 
-  class ImgEditor {
-    static base = "https://imgeditor.co/api";
-
-    static async getUploadUrl(buffer) {
-      const res = await fetch(`${this.base}/get-upload-url`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          fileName: "photo.jpg",
-          contentType: "image/jpeg",
-          fileSize: buffer.length
-        })
-      });
-
-      return res.json();
-    }
-
-    static async upload(uploadUrl, buffer) {
-      await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "content-type": "image/jpeg" },
-        body: buffer
-      });
-    }
-
-    static async generate(userPrompt, imageUrl) {
-
-      const FIXED_PROMPT = `
-STRICT IMAGE EDITING MODE
-
-Preserve the original image exactly as it is.
-
-Do NOT modify, alter, replace, remove, regenerate, beautify, retouch, redraw, recolor, reshape, age, de-age, crop, blur, enhance, or edit any person, face, body, clothing, object, background, lighting, pose, expression, camera angle, image quality, or any other element.
-
-Identity must remain exactly the same.
-Facial features must remain exactly the same.
-Body proportions must remain exactly the same.
-Clothing must remain exactly the same.
-Background must remain exactly the same.
-
-The ONLY allowed modification is:
-Add a realistic modest hijab that naturally covers the hair.
-
-No other changes are allowed.
-The final image should appear identical to the original image except for the added hijab.
-
-Additional user request:
-${userPrompt}
-`;
-
-      const res = await fetch(`${this.base}/generate-image`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          prompt: FIXED_PROMPT,
-          styleId: "realistic",
-          mode: "image",
-          imageUrl,
-          imageUrls: [imageUrl],
-          numImages: 1,
-          outputFormat: "png",
-          model: "nano-banana"
-        })
-      });
-
-      return res.json();
-    }
-
-    static async check(taskId) {
-      let attempts = 0;
-
-      while (attempts < 40) {
-        await new Promise(r => setTimeout(r, 2500));
-
-        const res = await fetch(
-          `${this.base}/generate-image/status?taskId=${taskId}`
-        );
-
-        const json = await res.json();
-
-        if (json.status === "completed") return json.imageUrl;
-        if (json.status === "failed") throw new Error("Task failed");
-
-        attempts++;
-      }
-
-      throw new Error("Timeout generating image");
-    }
-  }
-
-  // =========================
-  // REST API ENDPOINT
-  // =========================
-
-  // GET: /api/hijab?image=URL&prompt=TEXT
-  app.get("/api/hijab", async (req, res) => {
+  // GET: /api/aienhancer?url=IMAGE_URL&prompt=TEXT
+  // أو: /api/aienhancer?image=BASE64&prompt=TEXT
+  app.get("/api/aienhancer", async (req, res) => {
     try {
-      const { image, prompt } = req.query;  // ← استخرجنا الـ prompt من الـ query
+      const { url, image, prompt } = req.query;
 
-      if (!image) {
+      if (!prompt) {
         return res.status(400).json({
           status: false,
-          error: "image required"
+          error: "prompt required"
         });
       }
 
-      let buffer;
-
-      // base64 support
-      if (image.startsWith("data:")) {
-        buffer = Buffer.from(image.split(",")[1], "base64");
-      } 
-      // url support
-      else {
-        const img = await fetch(image);
-        if (!img.ok) throw new Error("Invalid image URL");
-        buffer = Buffer.from(await img.arrayBuffer());
+      if (!url && !image) {
+        return res.status(400).json({
+          status: false,
+          error: "url or image (base64) required"
+        });
       }
 
-      // 1. get upload url
-      const up = await ImgEditor.getUploadUrl(buffer);
+      let base64Image;
 
-      if (!up.uploadUrl) {
-        throw new Error("Upload URL failed");
+      // base64 مباشر
+      if (image) {
+        base64Image = image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}`;
+      }
+      // URL للصورة
+      else if (url) {
+        const imgRes = await fetch(url);
+        if (!imgRes.ok) throw new Error("Invalid image URL");
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        const mime = imgRes.headers.get("content-type") || "image/jpeg";
+        base64Image = `data:${mime};base64,${buffer.toString("base64")}`;
       }
 
-      // 2. upload image
-      await ImgEditor.upload(up.uploadUrl, buffer);
+      // إنشاء التاسك
+      const taskId = await createTask(base64Image, prompt);
 
-      // 3. generate image
-      // ← بعتنا الـ prompt من الـ user بدل الـ string الفاضي
-      const task = await ImgEditor.generate(prompt || "", up.publicUrl);
-
-      if (!task?.taskId) {
-        throw new Error("Task creation failed");
-      }
-
-      // 4. wait result
-      const resultUrl = await ImgEditor.check(task.taskId);
+      // انتظار النتيجة
+      const resultUrl = await pollResult(taskId);
 
       return res.json({
         status: true,
         creator: "Mohnd",
         result: {
-          image: resultUrl,        // ← ✅ زودنا الفاصلة
-          mode: "hijab_only"
+          image: resultUrl,
+          mode: "ai_enhancer"
         }
       });
 
