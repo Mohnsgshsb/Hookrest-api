@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Emam API</title>
+<title>DevX API</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -193,13 +193,13 @@ table.sec-table{width:100%;border-collapse:collapse;min-width:560px;font-size:.8
 </head>
 <body>
 <div class="grid-bg"></div>
-<div class="loader" id="loader"><div class="loader-ring"></div><span>Loading Emam API…</span></div>
+<div class="loader" id="loader"><div class="loader-ring"></div><span>Loading API…</span></div>
 <div class="toast-wrap" id="toastWrap"></div>
 
 <div class="topbar" id="topbar">
   <div class="brand-mini">
     <div class="brand-mini-logo"><i class="fas fa-bolt"></i></div>
-    <div class="brand-title" id="pageTitle">Home Emam API</div>
+    <div class="brand-title" id="pageTitle">DevX API</div>
   </div>
   <div class="topbar-icons">
     <button onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
@@ -214,7 +214,7 @@ table.sec-table{width:100%;border-collapse:collapse;min-width:560px;font-size:.8
   <div id="menuSections"></div>
   <div class="side-menu-sub"><i class="fas fa-code-compare"></i> More</div>
   <div class="side-menu-item" onclick="showAllSections()"><i class="fas fa-grip lead"></i> All Apis</div>
-  <div class="side-menu-foot">© <span id="yr"></span> Emam API</div>
+  <div class="side-menu-foot">© <span id="yr"></span> DevX API</div>
 </aside>
 
 <div class="layout">
@@ -241,10 +241,10 @@ table.sec-table{width:100%;border-collapse:collapse;min-width:560px;font-size:.8
 
     <div class="owner-card">
       <img class="owner-avatar" src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=emam" alt="owner">
-      <div class="owner-name">Emam Abolela</div>
+      <div class="owner-name">DevX </div>
       <div class="owner-tags">
-        <a class="owner-tag" href="tel:+201144480436"><i class="fas fa-phone"></i> +20 114 448 0436</a>
-        <a class="owner-tag" href="tel:+201277554569"><i class="fas fa-mobile"></i> +20 127 755 4569</a>
+        <a class="owner-tag" href="tel:+201208267668"><i class="fas fa-phone"></i> +20 120 826 7668</a>
+        <a class="owner-tag" href="tel:+201208267668"><i class="fas fa-mobile"></i> +20 120 826 7668</a>
         <span class="owner-tag"><i class="fas fa-book"></i> Read Manhwa</span>
         <span class="owner-tag"><i class="fas fa-book-open"></i> Read Novels</span>
         <span class="owner-tag"><i class="fas fa-tv"></i> Watch Anime</span>
@@ -255,7 +255,7 @@ table.sec-table{width:100%;border-collapse:collapse;min-width:560px;font-size:.8
 
     <div class="foot-brand">
       <div class="foot-logo"><i class="fas fa-fire"></i></div>
-      <div class="foot-name">⬥ Emam API</div>
+      <div class="foot-name">⬥ DevX API</div>
     </div>
   </div>
 
@@ -371,7 +371,7 @@ function toggleMenu(){
 function showDashboard(){
   document.getElementById('dashPage').classList.remove('hidden');
   document.getElementById('sectionsPage').classList.remove('active');
-  document.getElementById('pageTitle').textContent = 'Home Emam API';
+  document.getElementById('pageTitle').textContent = 'DevX API';
   document.getElementById('topbar').classList.remove('alt');
   if(document.getElementById('sideMenu').classList.contains('open')) toggleMenu();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -382,7 +382,7 @@ function showAllSections(){ openSection(null); }
 function openSection(name){
   document.getElementById('dashPage').classList.add('hidden');
   document.getElementById('sectionsPage').classList.add('active');
-  document.getElementById('pageTitle').textContent = 'Sections Emam API';
+  document.getElementById('pageTitle').textContent = 'Sections DevX API';
   document.getElementById('topbar').classList.add('alt');
   if(document.getElementById('sideMenu').classList.contains('open')) toggleMenu();
   document.getElementById('secSearch').value='';
