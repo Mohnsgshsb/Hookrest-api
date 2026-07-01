@@ -40,7 +40,7 @@ module.exports = function (app) {
         if (!url) {
             return res.status(400).json({
                 status: false,
-                message: "📌 حط رابط Pinterest"
+                message: "📌 ?url حط رابط Pinterest"
             });
         }
 
