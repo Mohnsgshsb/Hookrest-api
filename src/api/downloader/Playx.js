@@ -1,109 +1,111 @@
 const axios = require('axios');
 const yts = require('yt-search');
 
-module.exports = function(app) {
+module.exports = function (app) {
 
-    const vidssave = {
-        api: {
-            parse: "https://api.vidssave.com/api/contentsite_api/media/parse"
-        },
+    const ytdown = {
 
         headers: {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.163 Mobile Safari/537.36',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'sec-ch-ua-platform': '"Android"',
-            'sec-ch-ua': '"Android WebView";v="149", "Chromium";v="149", "Not)A;Brand";v="24"',
-            'sec-ch-ua-mobile': '?1',
-            'origin': 'https://vidssave.com',
-            'x-requested-with': 'mark.via.gp',
-            'sec-fetch-site': 'same-site',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-dest': 'empty',
-            'referer': 'https://vidssave.com/',
-            'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
-            'priority': 'u=1, i'
+            "User-Agent": "Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.163 Mobile Safari/537.36",
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "origin": "https://vidssave.com",
+            "referer": "https://vidssave.com/",
+            "x-requested-with": "mark.via.gp"
         },
 
-        isUrl: (str) => {
-            try { new URL(str); return true; } catch { return false; }
+        isUrl(str) {
+            try {
+                new URL(str);
+                return true;
+            } catch {
+                return false;
+            }
         },
 
-        parse: async (url) => {
-            // Build form data
-            const params = new URLSearchParams();
-            params.append('auth', '20250901majwlqo');
-            params.append('domain', 'api-ak.vidssave.com');
-            params.append('origin', 'source');
-            params.append('link', url);
+        async request(url) {
 
-            const res = await axios.post(
-                vidssave.api.parse,
-                params.toString(),
+            const body = new URLSearchParams({
+                auth: "20250901majwlqo",
+                domain: "api-ak.vidssave.com",
+                origin: "source",
+                link: url
+            });
+
+            const { data } = await axios.post(
+                "https://api.vidssave.com/api/contentsite_api/media/parse",
+                body.toString(),
                 {
-                    headers: vidssave.headers,
-                    responseType: 'json'
+                    headers: this.headers
                 }
             );
 
-            const data = res.data;
+            const media =
+                data.medias ||
+                data.media ||
+                data.resources ||
+                data.data ||
+                [];
 
-            if (!data || !data.data || !data.data.resources) {
-                throw new Error("فشل في جلب بيانات التحميل من vidssave");
-            }
+            const audio =
+                media.find(v =>
+                    v.type === "audio" &&
+                    v.format === "MP3" &&
+                    v.download_url
+                ) ||
+                media.find(v =>
+                    v.type === "audio" &&
+                    v.download_url
+                );
 
-            // Find first audio resource
-            const audioResources = data.data.resources.filter(r => r.type === 'audio');
-            
-            if (!audioResources || audioResources.length === 0) {
-                throw new Error("مفيش صوت متاح للتحميل 🗿");
-            }
-
-            const firstAudio = audioResources[0];
+            if (!audio)
+                throw new Error("تعذر الحصول على رابط التحميل");
 
             return {
                 success: true,
-                title: data.data.title || null,
-                duration: data.data.duration || null,
-                thumbnail: data.data.thumbnail || null,
-                download: firstAudio.download_url || null,
-                quality: firstAudio.quality || null,
-                format: firstAudio.format || null,
-                size: firstAudio.size || null,
-                raw: data
+                title: data.title || null,
+                duration: data.duration || null,
+                download: audio.download_url,
+                raw: audio
             };
         },
 
-        download: async (link) => {
+        async download(link) {
             if (!link) throw new Error("حط لينك 🗿");
-            if (!vidssave.isUrl(link)) throw new Error("لينك غلط 🗿");
+            if (!this.isUrl(link)) throw new Error("لينك غلط 🗿");
 
-            const res = await vidssave.parse(link);
-            return res;
+            return await this.request(link);
         }
+
     };
 
-    // مسار البحث عن الأغنية وتحميلها
-    app.get('/api/playx', async (req, res) => {
-        const { q } = req.query; // استعلام البحث عن اسم الأغنية
+    app.get("/api/playx", async (req, res) => {
+
+        const { q } = req.query;
+
         if (!q) {
-            return res.status(400).json({ status: false, error: 'Query is required' });
+            return res.status(400).json({
+                status: false,
+                error: "Query is required"
+            });
         }
+
         try {
-            // البحث عن أول فيديو باستخدام yt-search
-            const ytResults = await yts.search(q);
-            const firstVideo = ytResults.videos[0];
+
+            const results = await yts.search(q);
+
+            const firstVideo = results.videos[0];
+
             if (!firstVideo) {
-                return res.status(404).json({ status: false, error: 'No results found' });
+                return res.status(404).json({
+                    status: false,
+                    error: "No results found"
+                });
             }
 
-            const videoUrl = firstVideo.url;
+            const downloadResult = await ytdown.download(firstVideo.url);
 
-            // تحميل الصوت باستخدام vidssave
-            const downloadResult = await vidssave.download(videoUrl);
-
-            // إرجاع النتيجة للمستخدم
-            res.status(200).json({
+            res.json({
                 status: true,
                 video: {
                     title: firstVideo.title,
@@ -115,9 +117,16 @@ module.exports = function(app) {
                 download: downloadResult
             });
 
-        } catch (error) {
-            res.status(500).json({ status: false, error: error.message });
+        } catch (e) {
+
+            res.status(500).json({
+                status: false,
+                error: e.message,
+                details: e.response?.data || null
+            });
+
         }
+
     });
 
 };
