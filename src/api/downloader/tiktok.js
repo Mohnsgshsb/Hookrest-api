@@ -2,171 +2,104 @@ const axios = require("axios");
 
 module.exports = function (app) {
 
-    const tiktok = {
+  app.post("/api/tiktok", async (req, res) => {
 
-        headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "x-requested-with": "XMLHttpRequest",
-            "origin": "https://lovetik.com",
-            "referer": "https://lovetik.com/"
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        status: false,
+        creator: "TERBO-SPAM",
+        error: "حط رابط تيك توك في body باسم url"
+      });
+    }
+
+    if (
+      !url.includes("tiktok.com") &&
+      !url.includes("vt.tiktok.com")
+    ) {
+      return res.status(400).json({
+        status: false,
+        creator: "TERBO-SPAM",
+        error: "رابط تيك توك غير صحيح"
+      });
+    }
+
+    try {
+
+      const { data } = await axios.post(
+        "https://www.vip-dl.com/api/info",
+        {
+          url: url
         },
+        {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.124 Mobile Safari/537.36",
 
-        request: async (url) => {
-            try {
-                const { data } = await axios.post(
-                    "https://lovetik.com/api/ajax/search",
-                    new URLSearchParams({ query: url }),
-                    { 
-                        headers: tiktok.headers,
-                        timeout: 30000 // إضافة timeout
-                    }
-                );
-                return data;
-            } catch (error) {
-                throw new Error(`Request failed: ${error.message}`);
-            }
-        },
+            "Accept-Encoding":
+              "gzip, deflate, br, zstd",
 
-        pickBest: (links, type) => {
-            // ✅ تأكد إن links موجودة و Array
-            if (!links || !Array.isArray(links) || links.length === 0) {
-                return null;
-            }
+            "Content-Type":
+              "application/json",
 
-            if (type === "mp3") {
-                return links.find(v => v.ft == 3 || v.s?.includes("MP3"));
-            }
+            "sec-ch-ua-platform":
+              '"Android"',
 
-            return (
-                links.find(v => v.s?.includes("HD Original")) ||
-                links.find(v => v.s?.includes("1282p")) ||
-                links.find(v => v.s?.includes("1024p")) ||
-                links.find(v => v.s?.includes("854p")) ||
-                links.find(v => v.ft == 1) ||
-                links[0]
-            );
-        },
+            "sec-ch-ua":
+              '"Not;A=Brand";v="8", "Chromium";v="150", "Android WebView";v="150"',
 
-        parse: (data, type) => {
-            // ✅ Check إن الـ data صحيحة
-            if (!data) {
-                throw new Error("No data received from API");
-            }
+            "sec-ch-ua-mobile":
+              "?1",
 
-            if (!data.status) {
-                throw new Error(data.msg || "API returned error status");
-            }
+            "origin":
+              "https://www.vip-dl.com",
 
-            const best = tiktok.pickBest(data.links, type);
+            "x-requested-with":
+              "mark.via.gp",
 
-            if (!best || !best.a) {
-                throw new Error("No download link found for this media type");
-            }
+            "sec-fetch-site":
+              "same-origin",
 
-            return {
-                status: true,
-                type,
-                title: data.desc || "TikTok Video",
-                author: data.author?.nickname || data.author_name || "Unknown",
-                cover: data.cover || null,
-                download: best.a,
-                quality: best.s || "default",
-                // إضافة معلومات إضافية لو موجودة
-                duration: data.duration || null,
-                plays: data.play_count || null
-            };
+            "sec-fetch-mode":
+              "cors",
+
+            "sec-fetch-dest":
+              "empty",
+
+            "referer":
+              "https://www.vip-dl.com/",
+
+            "accept-language":
+              "en-GB,en-US;q=0.9,en;q=0.8",
+
+            "priority":
+              "u=1, i"
+          },
+
+          timeout: 60000
         }
-    };
+      );
 
-    // =========================
-    // 🎥 MP4 API
-    // =========================
-    app.get("/api/tiktok", async (req, res) => {
-        try {
-            const { url } = req.query;
+      return res.json({
+        status: true,
+        creator: "TERBO-SPAM",
+        input: url,
+        result: data
+      });
 
-            if (!url) {
-                return res.status(400).json({
-                    status: false,
-                    error: "URL parameter is required"
-                });
-            }
+    } catch (error) {
 
-            // ✅ Validate TikTok URL
-            if (!url.includes("tiktok.com")) {
-                return res.status(400).json({
-                    status: false,
-                    error: "Invalid TikTok URL"
-                });
-            }
+      return res.status(500).json({
+        status: false,
+        creator: "TERBO-SPAM",
+        error:
+          error.response?.data ||
+          error.message
+      });
 
-            const data = await tiktok.request(url);
-            
-            // ✅ Log للـ debugging (في الـ development)
-            if (process.env.NODE_ENV !== 'production') {
-                console.log("TikTok API Response:", JSON.stringify(data, null, 2));
-            }
+    }
 
-            const result = tiktok.parse(data, "mp4");
-
-            res.json({ 
-                status: true, 
-                creator: 'Danz-dev',
-                result 
-            });
-
-        } catch (err) {
-            console.error("TikTok MP4 Error:", err.message);
-            res.status(500).json({
-                status: false,
-                error: err.message
-            });
-        }
-    });
-
-    // =========================
-    // 🎧 MP3 API
-    // =========================
-    app.get("/api/tiktok-mp3", async (req, res) => {
-        try {
-            const { url } = req.query;
-
-            if (!url) {
-                return res.status(400).json({
-                    status: false,
-                    error: "URL parameter is required"
-                });
-            }
-
-            if (!url.includes("tiktok.com")) {
-                return res.status(400).json({
-                    status: false,
-                    error: "Invalid TikTok URL"
-                });
-            }
-
-            const data = await tiktok.request(url);
-            
-            if (process.env.NODE_ENV !== 'production') {
-                console.log("TikTok MP3 Response:", JSON.stringify(data, null, 2));
-            }
-
-            const result = tiktok.parse(data, "mp3");
-
-            res.json({ 
-                status: true, 
-                creator: 'Danz-dev',
-                result 
-            });
-
-        } catch (err) {
-            console.error("TikTok MP3 Error:", err.message);
-            res.status(500).json({
-                status: false,
-                error: err.message
-            });
-        }
-    });
+  });
 
 };
