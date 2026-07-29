@@ -3,47 +3,45 @@ const cheerio = require("cheerio");
 
 module.exports = function (app) {
 
-  async function saveTik(url) {
+  async function musicalDown(url) {
 
     const { data } = await axios.post(
-      "https://savetik.co/api/ajaxSearch",
+      "https://musicaldown.net/api/ajaxSearch",
       new URLSearchParams({
         q: url,
-        lang: "ar",
-        cftoken: ""
+        cursor: "0",
+        page: "0",
+        lang: "ar"
       }).toString(),
       {
         headers: {
           "User-Agent": "Mozilla/5.0 (Linux; Android 15; 2409BRN2CY Build/AP3A.240905.015.A2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.181 Mobile Safari/537.36",
+          "Accept": "application/json, text/javascript, */*; q=0.01",
           "Accept-Encoding": "gzip, deflate, br, zstd",
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+          "Origin": "https://musicaldown.net",
+          "Referer": "https://musicaldown.net/ar",
           "sec-ch-ua-platform": '"Android"',
           "sec-ch-ua": '"Not;A=Brand";v="8", "Chromium";v="150", "Android WebView";v="150"',
           "sec-ch-ua-mobile": "?1",
-          "origin": "https://savetik.co",
-          "x-requested-with": "XMLHttpRequest",
           "sec-fetch-site": "same-origin",
           "sec-fetch-mode": "cors",
           "sec-fetch-dest": "empty",
-          "referer": "https://savetik.co/ar",
-          "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-          "priority": "u=1, i"
+          "accept-language": "ar,en-US;q=0.9,en;q=0.8"
         },
         timeout: 60000
       }
     );
 
-    if (data.status !== "ok") {
-      throw new Error("فشل الحصول على بيانات الفيديو");
-    }
+    if (data.status !== "ok")
+      throw new Error("فشل استخراج الفيديو");
 
     const $ = cheerio.load(data.data);
 
     const result = {
       title: $(".content h3").text().trim() || null,
       thumbnail: $(".image-tik img").attr("src") || null,
-      video: $("#vid").attr("data-src") || null,
-      poster: $("#vid").attr("poster") || null,
       tiktok_id: $("#TikTokId").val() || null,
       downloads: []
     };
@@ -53,9 +51,20 @@ module.exports = function (app) {
       const name = $(el).text().replace(/\s+/g, " ").trim();
       const url = $(el).attr("href");
 
-      if (!url || !url.startsWith("http")) return;
+      if (!url) return;
+
+      let type = "other";
+
+      if (/mp3/i.test(name)) {
+        type = "audio";
+      } else if (/hd/i.test(name)) {
+        type = "video_hd";
+      } else if (/mp4/i.test(name)) {
+        type = "video";
+      }
 
       result.downloads.push({
+        type,
         name,
         url
       });
@@ -63,6 +72,7 @@ module.exports = function (app) {
     });
 
     return result;
+
   }
 
   // ================= API =================
@@ -92,7 +102,7 @@ module.exports = function (app) {
 
     try {
 
-      const result = await saveTik(url);
+      const result = await musicalDown(url);
 
       res.json({
         status: true,
@@ -101,12 +111,12 @@ module.exports = function (app) {
         result
       });
 
-    } catch (err) {
+    } catch (e) {
 
       res.status(500).json({
         status: false,
         creator: "TERBO-SPAM",
-        error: err.response?.data || err.message
+        error: e.response?.data || e.message
       });
 
     }
