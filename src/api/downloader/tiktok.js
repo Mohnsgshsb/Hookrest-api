@@ -1,17 +1,17 @@
 const axios = require("axios");
-const cheerio = require("cheerio");
 
 module.exports = function (app) {
 
-  async function musicalDown(url) {
+  async function tikwm(url) {
 
     const { data } = await axios.post(
-      "https://musicaldown.net/api/ajaxSearch",
+      "https://tikwm.com/api/",
       new URLSearchParams({
-        q: url,
+        url,
+        count: "12",
         cursor: "0",
-        page: "0",
-        lang: "ar"
+        web: "1",
+        hd: "1"
       }).toString(),
       {
         headers: {
@@ -20,62 +20,72 @@ module.exports = function (app) {
           "Accept-Encoding": "gzip, deflate, br, zstd",
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
           "X-Requested-With": "XMLHttpRequest",
-          "Origin": "https://musicaldown.net",
-          "Referer": "https://musicaldown.net/ar",
-          "sec-ch-ua-platform": '"Android"',
-          "sec-ch-ua": '"Not;A=Brand";v="8", "Chromium";v="150", "Android WebView";v="150"',
-          "sec-ch-ua-mobile": "?1",
-          "sec-fetch-site": "same-origin",
-          "sec-fetch-mode": "cors",
-          "sec-fetch-dest": "empty",
-          "accept-language": "ar,en-US;q=0.9,en;q=0.8"
+          "Origin": "https://tikwm.com",
+          "Referer": "https://tikwm.com/"
         },
         timeout: 60000
       }
     );
 
-    if (data.status !== "ok")
-      throw new Error("فشل استخراج الفيديو");
+    if (data.code !== 0) {
+      throw new Error(data.msg || "فشل استخراج الفيديو");
+    }
 
-    const $ = cheerio.load(data.data);
+    const d = data.data;
 
-    const result = {
-      title: $(".content h3").text().trim() || null,
-      thumbnail: $(".image-tik img").attr("src") || null,
-      tiktok_id: $("#TikTokId").val() || null,
-      downloads: []
+    const fix = (x) => {
+      if (!x) return null;
+      return x.startsWith("http")
+        ? x
+        : `https://tikwm.com${x}`;
     };
 
-    $(".tik-button-dl").each((_, el) => {
+    return {
+      id: d.id,
+      title: d.title,
+      region: d.region,
+      duration: d.duration,
+      created: d.create_time,
 
-      const name = $(el).text().replace(/\s+/g, " ").trim();
-      const url = $(el).attr("href");
+      author: {
+        id: d.author?.id,
+        username: d.author?.unique_id,
+        nickname: d.author?.nickname,
+        avatar: fix(d.author?.avatar)
+      },
 
-      if (!url) return;
+      statistics: {
+        play: d.play_count,
+        likes: d.digg_count,
+        comments: d.comment_count,
+        shares: d.share_count,
+        downloads: d.download_count,
+        favorites: d.collect_count
+      },
 
-      let type = "other";
+      media: {
+        thumbnail: fix(d.cover),
 
-      if (/mp3/i.test(name)) {
-        type = "audio";
-      } else if (/hd/i.test(name)) {
-        type = "video_hd";
-      } else if (/mp4/i.test(name)) {
-        type = "video";
+        video: fix(d.play),
+
+        video_hd: fix(d.hdplay),
+
+        video_wm: fix(d.wmplay),
+
+        audio: fix(d.music)
+      },
+
+      music: {
+        id: d.music_info?.id,
+        title: d.music_info?.title,
+        author: d.music_info?.author,
+        duration: d.music_info?.duration,
+        original: d.music_info?.original,
+        url: d.music_info?.play
       }
-
-      result.downloads.push({
-        type,
-        name,
-        url
-      });
-
-    });
-
-    return result;
+    };
 
   }
-
-  // ================= API =================
 
   app.get("/api/tiktok", async (req, res) => {
 
@@ -89,20 +99,9 @@ module.exports = function (app) {
       });
     }
 
-    if (
-      !url.includes("tiktok.com") &&
-      !url.includes("vt.tiktok.com")
-    ) {
-      return res.status(400).json({
-        status: false,
-        creator: "TERBO-SPAM",
-        error: "رابط تيك توك غير صحيح"
-      });
-    }
-
     try {
 
-      const result = await musicalDown(url);
+      const result = await tikwm(url);
 
       res.json({
         status: true,
