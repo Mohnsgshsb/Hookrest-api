@@ -42,66 +42,99 @@ module.exports = function (app) {
             body.append('origin', 'source');
             body.append('link', link);
 
-            const response = await axios({
-                method: 'POST',
-                url: ytdown.api,
-                headers: ytdown.headers,
-                data: body,
-                timeout: 60000,
-                decompress: true,
-                responseType: 'json',
-                validateStatus: () => true
-            });
-
-            if (response.status !== 200) {
-                console.log('VIDSAVE STATUS:', response.status);
-                console.log('VIDSAVE DATA:', response.data);
-
-                throw new Error(
-                    `VidSave returned HTTP ${response.status}`
-                );
-            }
+            const response = await axios.post(
+                ytdown.api,
+                body,
+                {
+                    headers: ytdown.headers,
+                    timeout: 60000,
+                    decompress: true
+                }
+            );
 
             const data = response.data;
 
-            const videoData = data?.data || data?.result || data;
+            function findFormats(obj) {
+                if (!obj || typeof obj !== 'object') {
+                    return null;
+                }
 
-            if (!videoData) {
-                throw new Error('VidSave لم يرجع بيانات');
+                if (Array.isArray(obj)) {
+                    const audio = obj.find(
+                        x =>
+                            x &&
+                            typeof x === 'object' &&
+                            String(x.type || '').toLowerCase() === 'audio' &&
+                            x.resource_content
+                    );
+
+                    if (audio) {
+                        return audio;
+                    }
+
+                    for (const item of obj) {
+                        const result = findFormats(item);
+
+                        if (result) {
+                            return result;
+                        }
+                    }
+
+                    return null;
+                }
+
+                if (Array.isArray(obj.available_formats)) {
+                    const audio = obj.available_formats.find(
+                        x =>
+                            x &&
+                            typeof x === 'object' &&
+                            String(x.type || '').toLowerCase() === 'audio' &&
+                            x.resource_content
+                    );
+
+                    if (audio) {
+                        return audio;
+                    }
+                }
+
+                for (const key of Object.keys(obj)) {
+                    const result = findFormats(obj[key]);
+
+                    if (result) {
+                        return result;
+                    }
+                }
+
+                return null;
             }
 
-            const formats =
-                videoData?.available_formats ||
-                data?.available_formats ||
-                [];
-
-            const audio = formats.find(
-                item =>
-                    String(item?.type || '').toLowerCase() === 'audio'
-            );
+            const audio = findFormats(data);
 
             if (!audio) {
+                console.log(
+                    'VIDSAVE RESPONSE:',
+                    JSON.stringify(data, null, 2)
+                );
+
                 throw new Error('لم يتم العثور على Audio');
             }
 
+            const videoData =
+                data?.data ||
+                data?.result ||
+                {};
+
             return {
-                success: true,
-                id: videoData.id || null,
-                title: videoData.title || null,
-                thumbnail: videoData.thumbnail || null,
-                duration: videoData.duration || null,
-                audio: {
-                    resource_id: audio.resource_id || null,
-                    quality: audio.quality || null,
-                    format: audio.format || 'MP3',
-                    type: audio.type || 'audio',
-                    size: audio.size || null,
-                    resource_content: audio.resource_content || null,
-                    download_mode: audio.download_mode || '',
-                    download_url: audio.download_url || '',
-                    original_format: audio.original_format || null,
-                    available_formats: audio.available_formats || []
-                }
+                resource_id: audio.resource_id || null,
+                quality: audio.quality || null,
+                format: audio.format || 'MP3',
+                type: audio.type || 'audio',
+                size: audio.size || null,
+                resource_content: audio.resource_content || null,
+                download_mode: audio.download_mode || '',
+                download_url: audio.download_url || '',
+                original_format: audio.original_format || null,
+                available_formats: audio.available_formats || []
             };
         }
     };
@@ -121,6 +154,7 @@ module.exports = function (app) {
         try {
 
             const ytResults = await yts.search(q);
+
             const firstVideo = ytResults.videos[0];
 
             if (!firstVideo) {
@@ -131,21 +165,22 @@ module.exports = function (app) {
                 });
             }
 
-            const result = await ytdown.download(firstVideo.url);
+            const audio = await ytdown.download(
+                firstVideo.url
+            );
 
             return res.status(200).json({
                 status: true,
                 creator: 'TERBO-SPAM',
 
-                video: {
+                data: {
+                    id: firstVideo.videoId,
                     title: firstVideo.title,
-                    channel: firstVideo.author?.name || null,
-                    duration: firstVideo.duration?.timestamp || null,
-                    imageUrl: firstVideo.thumbnail || null,
-                    link: firstVideo.url
+                    thumbnail: firstVideo.thumbnail,
+                    duration: firstVideo.seconds
                 },
 
-                download: result
+                audio: audio
             });
 
         } catch (error) {
