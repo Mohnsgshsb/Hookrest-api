@@ -14,12 +14,12 @@ module.exports = function (app) {
             'sec-ch-ua-platform': '"Android"',
             'sec-ch-ua': '"Not=A?Brand";v="99", "Android WebView";v="151", "Chromium";v="151"',
             'sec-ch-ua-mobile': '?1',
-            'x-requested-with': 'mark.via.gp',
             'origin': 'https://ar.vidssave.com',
-            'referer': 'https://ar.vidssave.com/',
+            'x-requested-with': 'mark.via.gp',
             'sec-fetch-site': 'same-site',
             'sec-fetch-mode': 'cors',
             'sec-fetch-dest': 'empty',
+            'referer': 'https://ar.vidssave.com/',
             'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
             'priority': 'u=1, i'
         },
@@ -43,32 +43,74 @@ module.exports = function (app) {
                 throw new Error('لينك غلط 🗿');
             }
 
-            const body = new URLSearchParams();
+            /*
+             * نفس:
+             * --data-urlencode
+             * الموجودة في curl
+             */
+            const params = new URLSearchParams();
 
-            body.append('auth', '20250901majwlqo');
-            body.append('domain', 'api-ak.vidssave.com');
-            body.append('origin', 'source');
-            body.append('link', link);
-
-            const response = await axios.post(
-                ytdown.api,
-                body.toString(),
-                {
-                    headers: ytdown.headers,
-                    timeout: 60000,
-                    decompress: true
-                }
+            params.append(
+                'auth',
+                '20250901majwlqo'
             );
 
-            const data = response.data;
+            params.append(
+                'domain',
+                'api-ak.vidssave.com'
+            );
 
-            console.log(
-                'VIDSAVE RESPONSE:',
-                JSON.stringify(data, null, 2)
+            params.append(
+                'origin',
+                'source'
+            );
+
+            params.append(
+                'link',
+                link
             );
 
             /*
-             * نحاول الوصول لبيانات الفيديو
+             * POST مطابق للـ curl
+             */
+            const response = await axios.post(
+                ytdown.api,
+                params.toString(),
+                {
+                    headers: ytdown.headers,
+                    timeout: 60000,
+
+                    // axios يفك gzip/br تلقائياً
+                    decompress: true,
+
+                    validateStatus: () => true
+                }
+            );
+
+            console.log(
+                'VIDSAVE STATUS:',
+                response.status
+            );
+
+            console.log(
+                'VIDSAVE RESPONSE:',
+                JSON.stringify(
+                    response.data,
+                    null,
+                    2
+                )
+            );
+
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error(
+                    `VidSave HTTP ${response.status}`
+                );
+            }
+
+            const data = response.data;
+
+            /*
+             * البيانات الأساسية
              */
             const videoData =
                 data?.data ||
@@ -76,76 +118,87 @@ module.exports = function (app) {
                 data;
 
             if (!videoData) {
-                throw new Error('VidSave لم يرجع بيانات');
+                throw new Error(
+                    'VidSave لم يرجع بيانات'
+                );
             }
 
             /*
-             * استخراج available_formats
+             * available_formats
              */
             const formats =
-                videoData.available_formats ||
+                videoData?.available_formats ||
                 data?.available_formats ||
                 [];
 
             /*
-             * أول ملف Audio
+             * البحث عن الصوت MP3
              */
             const audio =
-                formats.find(
-                    item =>
-                        String(item?.type || '').toLowerCase() === 'audio'
+                formats.find(item =>
+                    String(
+                        item?.type || ''
+                    ).toLowerCase() === 'audio'
                 ) || null;
 
             if (!audio) {
-                throw new Error('لم يتم العثور على ملف MP3');
-            }
-
-            /*
-             * resource_content هو القيمة التي تريد إرجاعها
-             */
-            if (!audio.resource_content) {
-                throw new Error('resource_content غير موجود');
+                throw new Error(
+                    'لم يتم العثور على Audio داخل available_formats'
+                );
             }
 
             return {
                 success: true,
 
-                id: videoData.id || null,
+                id:
+                    videoData.id || null,
 
-                title: videoData.title || null,
+                title:
+                    videoData.title || null,
 
-                thumbnail: videoData.thumbnail || null,
+                thumbnail:
+                    videoData.thumbnail || null,
 
-                duration: videoData.duration || null,
+                duration:
+                    videoData.duration || null,
 
                 audio: {
-                    resource_id: audio.resource_id || null,
+                    resource_id:
+                        audio.resource_id || null,
 
-                    quality: audio.quality || null,
+                    quality:
+                        audio.quality || null,
 
-                    format: audio.format || 'MP3',
+                    format:
+                        audio.format || 'MP3',
 
-                    type: audio.type || 'audio',
+                    type:
+                        audio.type || 'audio',
 
-                    size: audio.size || null,
+                    size:
+                        audio.size || null,
 
-                    resource_content: audio.resource_content,
+                    resource_content:
+                        audio.resource_content || null,
 
-                    download_mode: audio.download_mode || '',
+                    download_mode:
+                        audio.download_mode || '',
 
-                    download_url: audio.download_url || '',
+                    download_url:
+                        audio.download_url || '',
 
-                    original_format: audio.original_format || null,
-
-                    available_formats:
-                        audio.available_formats || []
+                    original_format:
+                        audio.original_format || null
                 }
             };
         }
     };
 
 
-    // البحث عن الأغنية وتحميلها
+    // ================================
+    // /api/play
+    // ================================
+
     app.get('/api/play', async (req, res) => {
 
         const { q } = req.query;
@@ -159,10 +212,14 @@ module.exports = function (app) {
 
         try {
 
-            // البحث في يوتيوب
-            const ytResults = await yts.search(q);
+            /*
+             * البحث في YouTube
+             */
+            const ytResults =
+                await yts.search(q);
 
-            const firstVideo = ytResults.videos[0];
+            const firstVideo =
+                ytResults.videos[0];
 
             if (!firstVideo) {
                 return res.status(404).json({
@@ -171,26 +228,38 @@ module.exports = function (app) {
                 });
             }
 
-            // رابط الفيديو
-            const videoUrl = firstVideo.url;
+            /*
+             * رابط الفيديو
+             */
+            const videoUrl =
+                firstVideo.url;
 
-            // VidSave
+            /*
+             * إرسال الرابط إلى VidSave
+             */
             const downloadResult =
-                await ytdown.download(videoUrl);
+                await ytdown.download(
+                    videoUrl
+                );
 
-            // الرد النهائي
+            /*
+             * الرد
+             */
             return res.status(200).json({
 
                 status: true,
 
                 video: {
-                    title: firstVideo.title,
+                    title:
+                        firstVideo.title,
 
                     channel:
-                        firstVideo.author?.name || null,
+                        firstVideo.author?.name ||
+                        null,
 
                     duration:
-                        firstVideo.duration?.timestamp || null,
+                        firstVideo.duration?.timestamp ||
+                        null,
 
                     imageUrl:
                         firstVideo.thumbnail,
@@ -199,7 +268,8 @@ module.exports = function (app) {
                         firstVideo.url
                 },
 
-                download: downloadResult
+                download:
+                    downloadResult
 
             });
 
@@ -216,8 +286,9 @@ module.exports = function (app) {
                 status: false,
 
                 error:
-                    error.response?.data ||
-                    error.message
+                    typeof error.response?.data === 'object'
+                        ? error.response.data
+                        : error.message
 
             });
         }
