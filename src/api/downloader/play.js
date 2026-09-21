@@ -4,6 +4,7 @@ const yts = require('yt-search');
 module.exports = function (app) {
 
     const ytdown = {
+
         api: 'https://api.vidssave.com/api/contentsite_api/media/parse',
 
         headers: {
@@ -48,75 +49,130 @@ module.exports = function (app) {
                 {
                     headers: ytdown.headers,
                     timeout: 60000,
-                    decompress: true
+                    decompress: true,
+                    responseType: 'json',
+                    validateStatus: () => true
                 }
             );
 
+            if (response.status < 200 || response.status >= 300) {
+                console.log('VIDSAVE STATUS:', response.status);
+                console.log('VIDSAVE RESPONSE:', response.data);
+
+                throw new Error(
+                    `VidSave HTTP ${response.status}`
+                );
+            }
+
             const data = response.data;
 
-            function findFormats(obj) {
-                if (!obj || typeof obj !== 'object') {
-                    return null;
+            const allFormats = [];
+
+            const addFormat = (item) => {
+
+                if (!item || typeof item !== 'object') {
+                    return;
+                }
+
+                if (
+                    item.type ||
+                    item.format ||
+                    item.resource_id ||
+                    item.resource_content ||
+                    item.download_url
+                ) {
+                    allFormats.push(item);
+                }
+            };
+
+            const scan = (obj) => {
+
+                if (!obj) {
+                    return;
                 }
 
                 if (Array.isArray(obj)) {
-                    const audio = obj.find(
-                        x =>
-                            x &&
-                            typeof x === 'object' &&
-                            String(x.type || '').toLowerCase() === 'audio' &&
-                            x.resource_content
-                    );
-
-                    if (audio) {
-                        return audio;
-                    }
 
                     for (const item of obj) {
-                        const result = findFormats(item);
-
-                        if (result) {
-                            return result;
-                        }
+                        addFormat(item);
+                        scan(item);
                     }
 
-                    return null;
+                    return;
+                }
+
+                if (typeof obj !== 'object') {
+                    return;
                 }
 
                 if (Array.isArray(obj.available_formats)) {
-                    const audio = obj.available_formats.find(
-                        x =>
-                            x &&
-                            typeof x === 'object' &&
-                            String(x.type || '').toLowerCase() === 'audio' &&
-                            x.resource_content
-                    );
 
-                    if (audio) {
-                        return audio;
+                    for (const item of obj.available_formats) {
+                        addFormat(item);
                     }
                 }
 
                 for (const key of Object.keys(obj)) {
-                    const result = findFormats(obj[key]);
 
-                    if (result) {
-                        return result;
+                    if (key === 'available_formats') {
+                        continue;
+                    }
+
+                    const value = obj[key];
+
+                    if (
+                        value &&
+                        typeof value === 'object'
+                    ) {
+                        scan(value);
                     }
                 }
+            };
 
-                return null;
-            }
+            scan(data);
 
-            const audio = findFormats(data);
+            const uniqueFormats = Array.from(
+                new Map(
+                    allFormats.map((item, index) => [
+                        item.resource_id ||
+                        item.download_url ||
+                        item.resource_content ||
+                        `${item.type}-${item.format}-${item.quality}-${index}`,
 
-            if (!audio) {
+                        item
+                    ])
+                ).values()
+            );
+
+            const audioFormats = uniqueFormats.filter(
+                item =>
+                    String(item.type || '').toLowerCase() === 'audio'
+            );
+
+            const mp3Formats = audioFormats.filter(
+                item =>
+                    String(item.format || '').toUpperCase() === 'MP3'
+            );
+
+            const selectedAudio =
+                mp3Formats.find(
+                    item =>
+                        String(item.quality || '').toUpperCase() === '48KBPS'
+                ) ||
+                mp3Formats[0] ||
+                audioFormats[0] ||
+                null;
+
+            if (!selectedAudio) {
+
                 console.log(
                     'VIDSAVE RESPONSE:',
                     JSON.stringify(data, null, 2)
                 );
 
-                throw new Error('لم يتم العثور على Audio');
+                throw new Error(
+                    'لم يتم العثور على Audio داخل VidSave'
+                );
             }
 
             const videoData =
@@ -125,21 +181,19 @@ module.exports = function (app) {
                 {};
 
             return {
-                resource_id: audio.resource_id || null,
-                quality: audio.quality || null,
-                format: audio.format || 'MP3',
-                type: audio.type || 'audio',
-                size: audio.size || null,
-                resource_content: audio.resource_content || null,
-                download_mode: audio.download_mode || '',
-                download_url: audio.download_url || '',
-                original_format: audio.original_format || null,
-                available_formats: audio.available_formats || []
+                id: videoData.id || null,
+                title: videoData.title || null,
+                thumbnail: videoData.thumbnail || null,
+                duration: videoData.duration || null,
+
+                selected_format: selectedAudio,
+
+                formats: uniqueFormats
             };
         }
     };
 
-    app.get('/api/pla', async (req, res) => {
+    app.get('/api/p', async (req, res) => {
 
         const { q } = req.query;
 
@@ -155,7 +209,8 @@ module.exports = function (app) {
 
             const ytResults = await yts.search(q);
 
-            const firstVideo = ytResults.videos[0];
+            const firstVideo =
+                ytResults.videos?.[0];
 
             if (!firstVideo) {
                 return res.status(404).json({
@@ -165,37 +220,78 @@ module.exports = function (app) {
                 });
             }
 
-            const audio = await ytdown.download(
-                firstVideo.url
-            );
+            const result =
+                await ytdown.download(firstVideo.url);
 
             return res.status(200).json({
+
                 status: true,
+
                 creator: 'TERBO-SPAM',
 
                 data: {
-                    id: firstVideo.videoId,
-                    title: firstVideo.title,
-                    thumbnail: firstVideo.thumbnail,
-                    duration: firstVideo.seconds
+                    id:
+                        result.id ||
+                        firstVideo.videoId ||
+                        null,
+
+                    title:
+                        result.title ||
+                        firstVideo.title ||
+                        null,
+
+                    thumbnail:
+                        result.thumbnail ||
+                        firstVideo.thumbnail ||
+                        null,
+
+                    duration:
+                        result.duration ??
+                        firstVideo.seconds ??
+                        null
                 },
 
-                audio: audio
+                video: {
+                    title:
+                        firstVideo.title || null,
+
+                    channel:
+                        firstVideo.author?.name || null,
+
+                    duration:
+                        firstVideo.duration?.timestamp || null,
+
+                    imageUrl:
+                        firstVideo.thumbnail || null,
+
+                    link:
+                        firstVideo.url || null
+                },
+
+                download: result.selected_format,
+
+                formats: result.formats
+
             });
 
         } catch (error) {
 
             console.error(
                 'YT PLAY ERROR:',
-                error.response?.data || error.message
+                error.response?.data ||
+                error.message
             );
 
             return res.status(500).json({
+
                 status: false,
+
                 creator: 'TERBO-SPAM',
-                error: error.message
+
+                error:
+                    error.message
+
             });
         }
     });
-
 };
