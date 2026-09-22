@@ -67,7 +67,7 @@ module.exports = function (app) {
         }
     };
 
-    app.get('/api/p', async (req, res) => {
+    app.get('/api/play', async (req, res) => {
 
         const { q } = req.query;
 
