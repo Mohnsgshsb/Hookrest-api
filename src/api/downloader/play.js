@@ -67,7 +67,7 @@ module.exports = function (app) {
         }
     };
 
-    app.get('/api/play', async (req, res) => {
+    app.get('/api/play-v2', async (req, res) => {
 
         const { q } = req.query;
 
